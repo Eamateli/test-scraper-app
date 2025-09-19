@@ -1,4 +1,4 @@
-# Property Lead Scraper 🏠
+# Property Lead Scraper 
 
 A web scraping application built with Streamlit for discovering and analyzing  subdomains (Lodgify default) to generate high-quality leads for property management and vacation rental businesses.
 
