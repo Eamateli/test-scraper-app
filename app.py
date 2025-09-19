@@ -20,8 +20,8 @@ import base64
 
 # Page configuration
 st.set_page_config(
-    page_title="Lodgify Lead Generator",
-    page_icon="🏠",
+    page_title="Property Lead Scraper",
+    page_icon="🔍",
     layout="wide"
 )
 
@@ -635,7 +635,7 @@ def create_pdf_report(data):
 
 def main():
     # Header
-    st.markdown('<div class="main-header">🏠 Lodgify Lead Generator</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">🏠 Property Lead Scraper</div>', unsafe_allow_html=True)
     
     # Tabs for different sections
     tab1, tab2, tab3, tab4 = st.tabs(["📊 CSV Analysis", "🔍 Web Scraping", "📥 Results & Downloads", "📈 Visualizations"])
