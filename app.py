@@ -642,7 +642,6 @@ def main():
     
     with tab1:
         st.markdown("## CSV Data Analysis")
-        st.markdown('<div class="upload-section">', unsafe_allow_html=True)
         
         uploaded_file = st.file_uploader(
             "Drag and drop CSV file here",
@@ -712,7 +711,6 @@ def main():
     
     with tab2:
         st.markdown("## Web Scraping")
-        st.markdown('<div class="scraping-section">', unsafe_allow_html=True)
         
         # URL input and scrape button
         col1, col2 = st.columns([4, 1])
@@ -827,7 +825,6 @@ def main():
                 st.metric("Total Properties", total_properties)
             
             # Download section
-            st.markdown('<div class="download-section">', unsafe_allow_html=True)
             st.markdown("### 📁 Download Options")
             
             col1, col2, col3 = st.columns(3)
