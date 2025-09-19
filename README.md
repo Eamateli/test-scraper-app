@@ -2,56 +2,7 @@
 
 A web scraping application built with Streamlit for discovering and analyzing  subdomains (Lodgify default) to generate high-quality leads for property management and vacation rental businesses.
 
-## 🚀 Two Implementation Approaches
-
-This project provides **two complete solutions**:
-
-### 1. **Streamlit Web Application** (Recommended)
-- Modern, interactive web interface
-- Real-time scraping with progress tracking
-- Built-in CSV analysis and data visualization
-- Multiple export formats (JSON, CSV, PDF)
-- Professional dashboards and charts
-
-### 2. **Individual Python Scripts** (PDF Requirements)
-- Exact implementation as specified in project requirements
-- Command-line based execution
-- Modular script architecture
-- Perfect for automated workflows
-
-## 📁 Project Structure
-
-```
-lodgify-scraper/
-├── app.py                              # Main Streamlit application
-├── subdomain_fetch.py                  # Task 1: Subdomain discovery
-├── scraper.py                         # Task 2: Data scraping
-├── json_to_csv.py                     # Task 3: JSON to CSV conversion
-├── coutnry_categorizations.py         # Bonus 4: Country categorization
-├── bonus_5.py                         # Bonus 5: Company enrichment
-├── requirements.txt                   # Python dependencies
-├── README.md                         # This file
-└── .gitignore                        # Git ignore patterns
-```
-
-## 🎯 Features
-
-### Core Requirements (PDF Tasks)
--  **Task 1**: Subdomain discovery using certificate transparency
--  **Task 2**: Scrape 100+ subdomains for lead data
--  **Task 3**: Convert JSON to marketing-friendly CSV
--  **Bonus 4**: Country categorization with geographic analysis
--  **Bonus 5**: Company/personal info enrichment with lead scoring
-
-### Enhanced Streamlit Features
--  **CSV Analysis**: Upload, filter, and visualize existing data
--  **Real-time Scraping**: Progress tracking with live updates  
--  **Interactive Maps**: Geographic property distribution
--  **Data Visualizations**: Charts, graphs, and analytics
--  **Multiple Exports**: JSON, CSV, PDF download options
--  **Lead Scoring**: Automated quality assessment
-
-## 🚀 Quick Start
+##  Quick Start
 
 ### Option 1: Streamlit Web App (Recommended)
 
@@ -93,7 +44,58 @@ python bonus_5.py
 ```
 
 
-## 📋 Usage Guide
+## Two Implementation Approaches
+
+This project provides **two complete solutions**:
+
+### 1. **Streamlit Web Application** (Recommended)
+- Modern, interactive web interface
+- Real-time scraping with progress tracking
+- Built-in CSV analysis and data visualization
+- Multiple export formats (JSON, CSV, PDF)
+- Professional dashboards and charts
+
+### 2. **Individual Python Scripts** (PDF Requirements)
+- Exact implementation as specified in project requirements
+- Command-line based execution
+- Modular script architecture
+- Perfect for automated workflows
+
+## 📁 Project Structure
+
+```
+lodgify-scraper/
+├── app.py                              # Main Streamlit application
+├── subdomain_fetch.py                  # Task 1: Subdomain discovery
+├── scraper.py                          # Task 2: Data scraping
+├── json_to_csv.py                      # Task 3: JSON to CSV conversion
+├── coutnry_categorizations.py          # Bonus 4: Country categorization
+├── company_personal_info_enrichment.py  # Bonus 5: Company enrichment
+├── requirements.txt                    # Python dependencies
+├── README.md                            # This file
+└── .gitignore                           # Git ignore patterns
+```
+
+##  Features
+
+### Core Requirements (PDF Tasks)
+-  **Task 1**: Subdomain discovery using certificate transparency
+-  **Task 2**: Scrape 100+ subdomains for lead data
+-  **Task 3**: Convert JSON to marketing-friendly CSV
+-  **Bonus 4**: Country categorization with geographic analysis
+-  **Bonus 5**: Company/personal info enrichment with lead scoring
+
+### Enhanced Streamlit Features
+-  **CSV Analysis**: Upload, filter, and visualize existing data
+-  **Real-time Scraping**: Progress tracking with live updates  
+-  **Interactive Maps**: Geographic property distribution
+-  **Data Visualizations**: Charts, graphs, and analytics
+-  **Multiple Exports**: JSON, CSV, PDF download options
+-  **Lead Scoring**: Automated quality assessment
+
+
+
+##  Usage Guide
 
 ### Streamlit Web Interface
 
@@ -142,7 +144,7 @@ python bonus_5.py
 - Enriches top 5 records with company info
 - Outputs: `lodgify_enriched_records.csv`
 
-## 🛠️ Technical Implementation
+##  Technical Implementation
 
 ### Subdomain Discovery Methods
 - **Certificate Transparency**: Queries crt.sh for SSL certificates
@@ -172,7 +174,7 @@ python bonus_5.py
 - **Content Analysis**: Title and description text mining
 - **Confidence Scoring**: High/Medium/Low based on method used
 
-## 📊 Output Files Description
+## Output Files Description
 
 ### Streamlit Downloads
 - **JSON**: Raw structured data with all extracted fields
@@ -186,7 +188,7 @@ python bonus_5.py
 - `lodgify_country_*.csv` - Country categorization results
 - `lodgify_enriched_records.csv` - Enhanced company information
 
-## ⚙️ Configuration
+##  Configuration
 
 ### Environment Variables (Optional)
 ```bash
@@ -225,15 +227,15 @@ pip install -r requirements.txt --upgrade
 - **Production**: Use 100+ subdomains, 3-5 workers
 - **Large Scale**: Use 2-3 workers with delays
 
-## 🎖️ Evaluation Criteria Coverage
+##  Evaluation Criteria Coverage
 
-- 🌐 **Subdomain Coverage**: Multi-method discovery with 200+ potential targets
-- 🕵️ **Scraping Quality**: Comprehensive data extraction with error handling
-- 📑 **CSV Quality**: Marketing-ready format with lead scoring
-- 🌍 **Country Categorization**: Multi-factor geographic analysis
-- 👥 **Personal Enrichment**: Company analysis with lead quality metrics
+- **Subdomain Coverage**: Multi-method discovery with 200+ potential targets
+-  **Scraping Quality**: Comprehensive data extraction with error handling
+-  **CSV Quality**: Marketing-ready format with lead scoring
+- **Country Categorization**: Multi-factor geographic analysis
+-  **Personal Enrichment**: Company analysis with lead quality metrics
 
-## 📈 Business Value
+##  Business Value
 
 ### For Marketing Teams
 - **Ready-to-use lead lists** with contact information
@@ -247,227 +249,9 @@ pip install -r requirements.txt --upgrade
 - **Social media profiles** for relationship building
 - **Lead grades and priority rankings**
 
-## 📧 Submission Checklist
 
-- ✅ Complete GitHub repository with all code
-- ✅ Both Streamlit app and individual scripts
-- ✅ Comprehensive README with setup instructions
-- ✅ All required output files generated
-- ✅ Loom video explanation (5-10 minutes)
-- ✅ Email to tim@corzly.com and CC: kenan@corzly.com
-- ✅ Subject: [Your Name + Web Scraping Submission]
-- ✅ PayPal details for payment
 
-## 📄 License
-
-This project is created for the Lodgify Lead Generation Test Project ($100).
-Please ensure compliance with website terms of service and applicable laws when scraping data.
-
----
-
-**Submission Deadline**: Tuesday, September 23  
-**Payment**: $100 via PayPal upon completion  
-**Contact**: tim@corzly.com, kenan@corzly.com# Lodgify Lead Generator 🏠
-
-A comprehensive web scraping application built with Streamlit for discovering and analyzing Lodgify subdomains to generate high-quality leads for property management and vacation rental businesses.
-
-## Features
-
-- **Subdomain Discovery**: Automatically discovers Lodgify subdomains using certificate transparency logs
-- **Web Scraping**: Extracts property counts, contact information, and business details
-- **CSV Analysis**: Upload and analyze existing data with filtering and visualization
-- **Multiple Export Formats**: Download data as JSON, CSV, or PDF reports
-- **Interactive Visualizations**: Property distributions, maps, and country categorization
-- **Lead Enrichment**: Enhanced company information and lead quality scoring
-- **Country Categorization**: Automatically categorizes properties by location
-
-## Quick Start
-
-### 1. Clone or Download
-```bash
-git clone <your-repo-url>
-cd lodgify-scraper
-```
-
-### 2. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Run the Application
-```bash
-streamlit run app.py
-```
-
-### 4. Access the App
-Open your browser and go to: `http://localhost:8501`
-
-## Project Structure
-
-```
-lodgify-scraper/
-├── app.py              # Main Streamlit application
-├── requirements.txt    # Python dependencies
-├── README.md          # This file
-└── data/              # Generated output files (created automatically)
-```
-
-## Usage Guide
-
-### CSV Analysis Tab
-1. Upload a CSV file
-2. View data preview and summary statistics
-3. Filter data by any column
-4. Create visualizations with selected columns
-
-### Web Scraping Tab
-1. Enter target URL (default: https://www.lodgify.com/)
-2. Adjust scraping settings:
-   - Max Subdomains: Number of subdomains to discover (10-500)
-   - Max to Scrape: Number of subdomains to analyze (10-100)
-   - Workers: Concurrent scraping threads (1-10)
-3. Click "🔍 Scrape" to start the process
-4. Monitor progress and view discovered subdomains
-
-### Results & Downloads Tab
-1. View scraping metrics and success rates
-2. Download data in multiple formats:
-   - **JSON**: Raw structured data
-   - **CSV**: Flattened spreadsheet format
-   - **PDF**: Professional report format
-3. Browse the complete lead generation data table
-4. View country categorization results
-5. Access enriched company/personal information for top 5 leads
-
-### Visualizations Tab
-1. **Property Distribution**: Histogram of property counts
-2. **Top Domains**: Bar chart of highest-performing domains
-3. **Location Map**: Geographic distribution of properties
-4. **Country Analysis**: Pie chart of properties by country
-5. **Lead Quality**: Analysis of lead grades and business types
-
-## Technical Details
-
-### Subdomain Discovery Methods
-- **Certificate Transparency**: Queries crt.sh for SSL certificates
-- **Common Patterns**: Tests standard subdomain patterns
-- **Property-Based**: Generates vacation rental themed subdomains
-
-### Data Extraction Points
-- Property counts and individual property links
-- Contact information (email, phone, address)
-- Social media profiles (Facebook, Twitter, Instagram, LinkedIn)
-- Business details (company info, amenities, languages)
-- Location coordinates and booking capabilities
-
-### Lead Quality Scoring
-- Email contact: +30 points
-- Phone contact: +25 points
-- Property count > 0: +20 points
-- Social media presence: +15 points
-- Contact form available: +10 points
-
-**Grades**: A (70+), B (50-69), C (30-49), D (<30)
-
-## Deployment Options
-
-### Streamlit Cloud (Recommended)
-1. Push code to GitHub repository
-2. Connect to [share.streamlit.io](https://share.streamlit.io)
-3. Deploy directly from GitHub
-
-### Heroku
-```bash
-# Create Procfile
-echo "web: streamlit run app.py --server.port=\$PORT --server.address=0.0.0.0" > Procfile
-
-# Deploy
-heroku create your-app-name
-git push heroku main
-```
-
-### Railway
-1. Connect GitHub repository to [railway.app](https://railway.app)
-2. Railway auto-detects Python and runs the app
-
-### Local Network Access
-```bash
-streamlit run app.py --server.address=0.0.0.0 --server.port=8501
-```
-
-## Environment Variables (Optional)
-
-Create a `.env` file for configuration:
-```
-MAX_WORKERS=5
-DEFAULT_TIMEOUT=15
-SCRAPING_DELAY=1
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**"Module not found" errors**
-```bash
-pip install -r requirements.txt --upgrade
-```
-
-**Slow scraping performance**
-- Reduce the number of concurrent workers
-- Decrease max subdomains to scrape
-- Check internet connection stability
-
-**Empty results**
-- Verify the target domain is accessible
-- Check if the site has anti-bot protection
-- Try reducing concurrent workers to avoid rate limiting
-
-### Performance Tips
-
-1. **Optimal Settings**:
-   - Workers: 3-5 for best balance
-   - Max Subdomains: 50-100 for testing
-   - Timeout: 15 seconds default
-
-2. **Large Scale Scraping**:
-   - Use lower worker count (2-3)
-   - Add delays between requests
-   - Monitor system resources
-
-## Data Privacy & Ethics
-
-- Respects robots.txt when possible
-- Implements reasonable request delays
-- Only extracts publicly available information
-- Follows ethical scraping practices
-
-## Output Files Description
-
-### JSON Format
-- Raw structured data with all extracted fields
-- Maintains data types and nested objects
-- Best for further programmatic processing
-
-### CSV Format  
-- Flattened tabular format
-- Compatible with Excel and database imports
-- Optimized for sales and marketing teams
-
-### PDF Report
-- Executive summary with key metrics
-- Top-performing domains analysis
-- Professional formatting for presentations
-
-## Support
-
-For technical issues or questions:
-1. Check the troubleshooting section above
-2. Verify all dependencies are installed correctly
-3. Ensure you have a stable internet connection
-4. Test with a smaller dataset first
-
-## License
+##  License
 
 This project is for educational and testing purposes. Please ensure compliance with website terms of service and applicable laws when scraping data.
 
