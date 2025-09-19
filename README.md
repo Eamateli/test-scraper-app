@@ -1,6 +1,6 @@
-# Lodgify Lead Generator 🏠
+# Property Lead Scraper 🏠
 
-A comprehensive web scraping application built with Streamlit for discovering and analyzing Lodgify subdomains to generate high-quality leads for property management and vacation rental businesses.
+A web scraping application built with Streamlit for discovering and analyzing  subdomains (Lodgify default) to generate high-quality leads for property management and vacation rental businesses.
 
 ## 🚀 Two Implementation Approaches
 
@@ -27,7 +27,7 @@ lodgify-scraper/
 ├── subdomain_fetch.py                  # Task 1: Subdomain discovery
 ├── scraper.py                         # Task 2: Data scraping
 ├── json_to_csv.py                     # Task 3: JSON to CSV conversion
-├── bonus_4.py                         # Bonus 4: Country categorization
+├── coutnry_categorizations.py         # Bonus 4: Country categorization
 ├── bonus_5.py                         # Bonus 5: Company enrichment
 ├── requirements.txt                   # Python dependencies
 ├── README.md                         # This file
@@ -37,19 +37,19 @@ lodgify-scraper/
 ## 🎯 Features
 
 ### Core Requirements (PDF Tasks)
-- ✅ **Task 1**: Subdomain discovery using certificate transparency
-- ✅ **Task 2**: Scrape 100+ subdomains for lead data
-- ✅ **Task 3**: Convert JSON to marketing-friendly CSV
-- ✅ **Bonus 4**: Country categorization with geographic analysis
-- ✅ **Bonus 5**: Company/personal info enrichment with lead scoring
+-  **Task 1**: Subdomain discovery using certificate transparency
+-  **Task 2**: Scrape 100+ subdomains for lead data
+-  **Task 3**: Convert JSON to marketing-friendly CSV
+-  **Bonus 4**: Country categorization with geographic analysis
+-  **Bonus 5**: Company/personal info enrichment with lead scoring
 
 ### Enhanced Streamlit Features
-- 📊 **CSV Analysis**: Upload, filter, and visualize existing data
-- 🔍 **Real-time Scraping**: Progress tracking with live updates  
-- 🗺️ **Interactive Maps**: Geographic property distribution
-- 📈 **Data Visualizations**: Charts, graphs, and analytics
-- 📁 **Multiple Exports**: JSON, CSV, PDF download options
-- 🎯 **Lead Scoring**: Automated quality assessment
+-  **CSV Analysis**: Upload, filter, and visualize existing data
+-  **Real-time Scraping**: Progress tracking with live updates  
+-  **Interactive Maps**: Geographic property distribution
+-  **Data Visualizations**: Charts, graphs, and analytics
+-  **Multiple Exports**: JSON, CSV, PDF download options
+-  **Lead Scoring**: Automated quality assessment
 
 ## 🚀 Quick Start
 
@@ -92,41 +92,6 @@ python bonus_4.py
 python bonus_5.py
 ```
 
-## 🌐 Streamlit Cloud Deployment
-
-### Deploy to Streamlit Cloud (Free)
-
-1. **Push to GitHub**
-```bash
-git add .
-git commit -m "Initial commit"
-git push origin main
-```
-
-2. **Deploy on Streamlit Cloud**
-- Go to [share.streamlit.io](https://share.streamlit.io)
-- Connect your GitHub account
-- Select your repository
-- Choose `app.py` as the main file
-- Click "Deploy"
-
-3. **Your app will be live at**: `https://your-username-lodgify-scraper-app-xyz123.streamlit.app`
-
-### Alternative Deployment Options
-
-**Heroku (Free Tier)**
-```bash
-# Create Procfile
-echo "web: streamlit run app.py --server.port=\$PORT --server.address=0.0.0.0" > Procfile
-
-# Deploy
-heroku create your-app-name
-git push heroku main
-```
-
-**Railway**
-- Connect GitHub repo at [railway.app](https://railway.app)
-- Auto-detects Python and deploys
 
 ## 📋 Usage Guide
 
@@ -350,7 +315,7 @@ lodgify-scraper/
 ## Usage Guide
 
 ### CSV Analysis Tab
-1. Upload a CSV file using drag-and-drop
+1. Upload a CSV file
 2. View data preview and summary statistics
 3. Filter data by any column
 4. Create visualizations with selected columns
@@ -507,6 +472,3 @@ For technical issues or questions:
 This project is for educational and testing purposes. Please ensure compliance with website terms of service and applicable laws when scraping data.
 
 ---
-
-**Created for the Lodgify Lead Generation Test Project**  
-**Submission Deadline: Tuesday, September 23**
