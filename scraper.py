@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Lodgify Subdomain Scraper
-Scrapes 100 Lodgify subdomains for lead generation data
+Enhanced Lodgify Subdomain Scraper with Anti-Bot Bypass
+Scrapes 100 Lodgify subdomains for lead generation data using Playwright
 """
 
 import json
@@ -11,27 +11,108 @@ import re
 from urllib.parse import urlparse, urljoin
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
+import random
+import os
+import logging
+
+# Optional Playwright import
+try:
+    from playwright.sync_api import sync_playwright
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    PLAYWRIGHT_AVAILABLE = False
+    print("⚠️  Playwright not installed. Install with: pip install playwright && playwright install chromium")
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class LodgifyScraper:
-    """Enhanced scraper for Lodgify data"""
+    """Enhanced scraper with anti-bot bypass capabilities"""
     
-    def __init__(self):
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        })
+    def __init__(self, use_playwright=True, use_proxies=False):
+        self.use_playwright = use_playwright and PLAYWRIGHT_AVAILABLE
+        self.use_proxies = use_proxies
+        
+        # Fallback to requests if Playwright unavailable
+        if not self.use_playwright:
+            self.session = requests.Session()
+            self.session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            })
+        
+        # Production-ready User-Agent rotation
+        self.user_agents = [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:118.0) Gecko/20100101 Firefox/118.0",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_3_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Safari/605.1.15",
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 16_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0"
+        ]
+        
+        # Load proxies if enabled
+        self.proxies = self._load_proxies() if use_proxies else []
+        self.current_proxy_index = 0
+        
+        logger.info(f"Scraper initialized - Playwright: {self.use_playwright}, Proxies: {len(self.proxies)}")
+    
+    def _load_proxies(self):
+        """Load proxies from environment or file"""
+        proxies = []
+        
+        # Try environment variable first
+        proxy_env = os.getenv('PROXY_LIST', '')
+        if proxy_env:
+            for proxy_url in proxy_env.split(','):
+                proxy_url = proxy_url.strip()
+                if proxy_url:
+                    proxies.append(proxy_url)
+        
+        # Try proxies.txt file
+        if not proxies and os.path.exists('proxies.txt'):
+            try:
+                with open('proxies.txt', 'r') as f:
+                    for line in f:
+                        proxy_url = line.strip()
+                        if proxy_url and not proxy_url.startswith('#'):
+                            proxies.append(proxy_url)
+            except Exception as e:
+                logger.warning(f"Failed to load proxies: {e}")
+        
+        return proxies
+    
+    def _get_next_proxy(self):
+        """Get next proxy from rotation"""
+        if not self.proxies:
+            return None
+        proxy = self.proxies[self.current_proxy_index]
+        self.current_proxy_index = (self.current_proxy_index + 1) % len(self.proxies)
+        return proxy
     
     def scrape_subdomain(self, url):
-        """Scrape individual subdomain"""
+        """Scrape individual subdomain with anti-bot bypass"""
+        logger.info(f"🎯 Scraping: {url}")
+        
+        # Human-like delay
+        delay = random.uniform(1.5, 4.0)
+        time.sleep(delay)
+        
+        # Try Playwright first, fallback to requests
+        if self.use_playwright:
+            html_content = self._scrape_with_playwright(url)
+        else:
+            html_content = self._scrape_with_requests(url)
+        
+        if not html_content:
+            return self._create_error_record(url, "All scraping methods failed")
+        
         try:
-            print(f"Scraping: {url}")
-            response = self.session.get(url, timeout=15, allow_redirects=True)
-            if response.status_code != 200:
-                return self._create_error_record(url, f"HTTP {response.status_code}")
+            soup = BeautifulSoup(html_content, 'html.parser')
             
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            return {
+            result = {
                 'url': url,
                 'domain': urlparse(url).netloc,
                 'title': self._extract_title(soup),
@@ -51,10 +132,123 @@ class LodgifyScraper:
                 'status': 'success',
                 'scraped_at': time.strftime('%Y-%m-%d %H:%M:%S')
             }
-        except requests.RequestException as e:
-            return self._create_error_record(url, f"Request failed: {str(e)}")
+            
+            logger.info(f"✅ Successfully scraped {url}")
+            return result
+            
         except Exception as e:
+            logger.error(f"✗ Parsing error for {url}: {e}")
             return self._create_error_record(url, f"Parsing error: {str(e)}")
+    
+    def _scrape_with_playwright(self, url, max_retries=3):
+        """Scrape using Playwright with retry logic"""
+        for attempt in range(max_retries):
+            try:
+                with sync_playwright() as p:
+                    # Launch browser with stealth settings
+                    browser = p.chromium.launch(
+                        headless=True,
+                        args=[
+                            '--no-sandbox',
+                            '--disable-blink-features=AutomationControlled',
+                            '--disable-dev-shm-usage'
+                        ]
+                    )
+                    
+                    # Create context with realistic settings
+                    user_agent = random.choice(self.user_agents)
+                    context = browser.new_context(
+                        user_agent=user_agent,
+                        viewport={'width': 1920, 'height': 1080}
+                    )
+                    
+                    page = context.new_page()
+                    
+                    # Navigate with timeout
+                    response = page.goto(url, wait_until='domcontentloaded', timeout=30000)
+                    
+                    if response and response.status == 200:
+                        # Wait for content to load
+                        page.wait_for_timeout(random.randint(2000, 4000))
+                        content = page.content()
+                        browser.close()
+                        logger.info(f"✓ Playwright success: {url}")
+                        return content
+                    else:
+                        browser.close()
+                        if attempt < max_retries - 1:
+                            delay = (2 ** attempt) + random.uniform(1, 3)
+                            logger.warning(f"⚠ Playwright retry {attempt + 1} for {url} after {delay:.1f}s")
+                            time.sleep(delay)
+                            continue
+                        else:
+                            logger.error(f"✗ Playwright failed: {url}")
+                            return None
+                            
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    delay = (2 ** attempt) + random.uniform(1, 3)
+                    logger.warning(f"⚠ Playwright error, retry {attempt + 1} for {url}: {e}")
+                    time.sleep(delay)
+                    continue
+                else:
+                    logger.error(f"✗ Playwright error for {url}: {e}")
+                    return None
+        
+        return None
+    
+    def _scrape_with_requests(self, url, max_retries=3):
+        """Fallback scraping with requests and retry logic"""
+        for attempt in range(max_retries):
+            try:
+                headers = {
+                    'User-Agent': random.choice(self.user_agents),
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
+                    'Cache-Control': 'max-age=0'
+                }
+                
+                proxy = self._get_next_proxy() if self.use_proxies else None
+                proxies = {'http': proxy, 'https': proxy} if proxy else None
+                
+                response = self.session.get(
+                    url, 
+                    headers=headers,
+                    timeout=15, 
+                    allow_redirects=True,
+                    proxies=proxies
+                )
+                
+                if response.status_code == 200:
+                    logger.info(f"✓ Requests success: {url}")
+                    return response.text
+                elif response.status_code in [403, 429, 500, 502, 503]:
+                    if attempt < max_retries - 1:
+                        delay = (2 ** attempt) + random.uniform(1, 3)
+                        logger.warning(f"⚠ HTTP {response.status_code}, retry {attempt + 1} for {url}")
+                        time.sleep(delay)
+                        continue
+                    else:
+                        logger.error(f"✗ HTTP {response.status_code} for {url}")
+                        return None
+                else:
+                    logger.warning(f"⚠ Unexpected status {response.status_code} for {url}")
+                    return None
+                    
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    delay = (2 ** attempt) + random.uniform(1, 3)
+                    logger.warning(f"⚠ Request error, retry {attempt + 1} for {url}: {e}")
+                    time.sleep(delay)
+                    continue
+                else:
+                    logger.error(f"✗ Request error for {url}: {e}")
+                    return None
+        
+        return None
     
     def _create_error_record(self, url, error):
         return {

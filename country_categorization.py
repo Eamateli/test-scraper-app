@@ -212,76 +212,36 @@ def create_country_summary(categorized_data):
 def main():
     """Main function to categorize records by country"""
     print("Starting country categorization...")
-    
+
     # Load scraped data
     data = load_scraped_data()
     if not data:
         return
-    
+
     # Categorize by country
     categorized_data, stats = categorize_by_country(data)
-    
-    # Create detailed records CSV
+
+    # Combine into one flat list of categorized records
     all_records = []
     for country, records in categorized_data.items():
         all_records.extend(records)
-    
-    # Convert to DataFrame and save detailed records
-    df_detailed = pd.json_normalize(all_records)
-    detailed_output = "lodgify_country_categorized_detailed.csv"
-    df_detailed.to_csv(detailed_output, index=False, encoding='utf-8')
-    print(f"Detailed categorized records saved to {detailed_output}")
-    
-    # Create country summary
-    summary_data = create_country_summary(categorized_data)
-    df_summary = pd.DataFrame(summary_data)
-    summary_output = "lodgify_country_summary.csv"
-    df_summary.to_csv(summary_output, index=False, encoding='utf-8')
-    print(f"Country summary saved to {summary_output}")
-    
-    # Print categorization results
-    print("\nCountry Categorization Results:")
-    print("=" * 60)
-    
+
+    # Save single CSV with country column (requirement: ONE CSV file)
+    df_categorized = pd.json_normalize(all_records)
+    output_file = "country_categorized_records.csv"
+    df_categorized.to_csv(output_file, index=False, encoding='utf-8')
+    print(f"✅ Country categorized records saved to {output_file}")
+
+    # Print summary stats (optional, for console only)
+    print("\nSummary:")
+    print("=" * 50)
     print(f"Total records processed: {stats['total_processed']}")
     print(f"Successfully categorized: {stats['successfully_categorized']}")
-    print(f"Categorization rate: {stats['successfully_categorized']/stats['total_processed']*100:.1f}%")
-    
-    print(f"\nCategorization methods used:")
-    for method, count in stats['categorization_methods'].items():
-        percentage = count / stats['total_processed'] * 100 if stats['total_processed'] > 0 else 0
-        print(f"  {method.replace('_', ' ').title()}: {count} ({percentage:.1f}%)")
-    
-    print(f"\nCountry Distribution:")
-    print("-" * 60)
-    for country_data in summary_data:
-        country = country_data['Country']
-        count = country_data['Total_Records']
-        properties = country_data['Total_Properties']
-        email_pct = country_data['Email_Coverage_Percent']
-        phone_pct = country_data['Phone_Coverage_Percent']
-        
-        print(f"{country:12} | {count:3d} records | {properties:4d} properties | Email: {email_pct:5.1f}% | Phone: {phone_pct:5.1f}%")
-    
-    # Show sample records for top countries
-    print(f"\nSample Records by Country:")
-    print("-" * 60)
-    
-    top_countries = [item['Country'] for item in summary_data[:3] if item['Country'] != 'OTHER']
-    
-    for country in top_countries:
-        if country in categorized_data:
-            print(f"\n{country} - Sample Record:")
-            sample_record = categorized_data[country][0]
-            print(f"  Domain: {sample_record.get('domain', 'N/A')}")
-            print(f"  Title: {sample_record.get('title', 'N/A')[:50]}...")
-            print(f"  Properties: {sample_record.get('property_count', 0)}")
-            print(f"  Address: {sample_record.get('address', 'N/A')[:100]}...")
-            print(f"  Method: {sample_record.get('categorization_method', 'N/A')}")
-    
-    print(f"\n✅ Country categorization completed!")
-    print(f"📊 Detailed records: {detailed_output}")
-    print(f"📈 Country summary: {summary_output}")
+    if stats['total_processed'] > 0:
+        rate = stats['successfully_categorized'] / stats['total_processed'] * 100
+        print(f"Categorization rate: {rate:.1f}%")
+    print("Done!")
+
 
 if __name__ == "__main__":
     main()

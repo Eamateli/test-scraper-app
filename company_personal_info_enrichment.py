@@ -328,11 +328,11 @@ def main():
     df_enriched = pd.json_normalize(enriched_records)
     
     # Save enriched data to CSV
-    output_file = "lodgify_enriched_records.csv"
+    output_file = "company_info_enrichment.csv"
     df_enriched.to_csv(output_file, index=False, encoding='utf-8')
     
     print(f"\n✅ Enrichment completed!")
-    print(f"📊 Enriched records saved to: {output_file}")
+    print(f"📊 Company info enrichment saved to: {output_file}")
     
     # Print summary
     print(f"\nEnrichment Summary:")
