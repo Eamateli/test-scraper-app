@@ -20,7 +20,7 @@ import base64
 
 # Page configuration
 st.set_page_config(
-    page_title="Property Lead Scraper",
+    page_title="Site Subdomain Scraper",
     page_icon="🔍",
     layout="wide"
 )
@@ -635,10 +635,10 @@ def create_pdf_report(data):
 
 def main():
     # Header
-    st.markdown('<div class="main-header">🏠 Property Lead Scraper</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header"> Site Subdomain Scraper</div>', unsafe_allow_html=True)
     
     # Tabs for different sections
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 CSV Analysis", "🔍 Web Scraping", "📥 Results & Downloads", "📈 Visualizations"])
+    tab1, tab2, tab3, tab4 = st.tabs(["CSV Analysis", "Web Scraping", "Results & Downloads", "Visualizations"])
     
     with tab1:
         st.markdown("## CSV Data Analysis")
@@ -832,7 +832,7 @@ def main():
             with col1:
                 json_data = json.dumps(data, indent=2, default=str)
                 st.download_button(
-                    label="📄 JSON",
+                    label="JSON 🔻",
                     data=json_data,
                     file_name="lodgify_data.json",
                     mime="application/json",
@@ -843,7 +843,7 @@ def main():
                 df = pd.json_normalize(data)
                 csv_data = df.to_csv(index=False)
                 st.download_button(
-                    label="📊 CSV",
+                    label="CSV 🔻",
                     data=csv_data,
                     file_name="lodgify_data.csv",
                     mime="text/csv",
@@ -853,7 +853,7 @@ def main():
             with col3:
                 pdf_buffer = create_pdf_report(data)
                 st.download_button(
-                    label="📑 PDF",
+                    label="PDF 🔻",
                     data=pdf_buffer,
                     file_name="lodgify_report.pdf",
                     mime="application/pdf",
@@ -889,7 +889,7 @@ def main():
                 # Download country categorization
                 country_csv = country_df.to_csv(index=False)
                 st.download_button(
-                    label="📊 Download Country Data CSV",
+                    label="Download Country Data CSV 🔻",
                     data=country_csv,
                     file_name="lodgify_country_categorization.csv",
                     mime="text/csv"
@@ -907,7 +907,7 @@ def main():
                 # Download enriched data
                 enriched_csv = enriched_df.to_csv(index=False)
                 st.download_button(
-                    label="📊 Download Enriched Data CSV",
+                    label="Download Enriched Data CSV 🔻",
                     data=enriched_csv,
                     file_name="lodgify_enriched_data.csv",
                     mime="text/csv"
