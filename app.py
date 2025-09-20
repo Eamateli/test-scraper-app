@@ -638,78 +638,9 @@ def main():
     st.markdown('<div class="main-header"> Site Subdomain Scraper</div>', unsafe_allow_html=True)
     
     # Tabs for different sections
-    tab1, tab2, tab3, tab4 = st.tabs(["CSV Analysis", "Web Scraping", "Results & Downloads", "Visualizations"])
+    tab1, tab2, tab3 = st.tabs(["Web Scraping", "Results & Downloads", "CSV Analysis"])
     
     with tab1:
-        st.markdown("## CSV Data Analysis")
-        
-        uploaded_file = st.file_uploader(
-            "Drag and drop CSV file here",
-            type="csv",
-            help="Upload your CSV file for analysis"
-        )
-        
-        if uploaded_file is not None:
-            try:
-                df = pd.read_csv(uploaded_file)
-                st.session_state.csv_data = df
-                
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Rows", len(df))
-                with col2:
-                    st.metric("Columns", len(df.columns))
-                with col3:
-                    st.metric("Memory", f"{df.memory_usage(deep=True).sum() / 1024:.1f} KB")
-                with col4:
-                    st.metric("Missing", df.isnull().sum().sum())
-                
-                # Data preview
-                st.subheader("Data Preview")
-                st.dataframe(df.head(), use_container_width=True)
-                
-                # Data summary
-                st.subheader("Data Summary")
-                st.dataframe(df.describe(), use_container_width=True)
-                
-                # Filtering
-                st.subheader("Filter Data")
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    filter_column = st.selectbox("Column to filter", df.columns.tolist())
-                with col2:
-                    unique_values = df[filter_column].unique()
-                    selected_value = st.selectbox("Value", unique_values)
-                
-                filtered_df = df[df[filter_column] == selected_value]
-                st.write(f"Filtered data ({len(filtered_df)} rows):")
-                st.dataframe(filtered_df, use_container_width=True)
-                
-                # Plotting
-                st.subheader("Plot Data")
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    x_col = st.selectbox("X-axis", df.columns.tolist(), key="x")
-                with col2:
-                    y_col = st.selectbox("Y-axis", df.columns.tolist(), key="y")
-                
-                if st.button("Generate Plot"):
-                    if pd.api.types.is_numeric_dtype(filtered_df[y_col]):
-                        fig = px.line(filtered_df, x=x_col, y=y_col, title=f"{y_col} vs {x_col}")
-                        st.plotly_chart(fig, use_container_width=True)
-                    else:
-                        st.warning("Y-axis must be numeric")
-                        
-            except Exception as e:
-                st.error(f"Error loading CSV: {str(e)}")
-        else:
-            st.info("Upload a CSV file to begin analysis")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    with tab2:
         st.markdown("## Web Scraping")
         
         # URL input and scrape button
@@ -802,7 +733,7 @@ def main():
         
         st.markdown('</div>', unsafe_allow_html=True)
     
-    with tab3:
+    with tab2:
         st.markdown("## Results & Downloads")
         
         if st.session_state.scraped_data:
@@ -916,127 +847,72 @@ def main():
         else:
             st.info("No scraped data available. Please run the scraper first.")
     
-    with tab4:
-        st.markdown("## Data Visualizations")
+    with tab3:
+        st.markdown("## CSV Data Analysis")
         
-        if st.session_state.scraped_data:
-            data = st.session_state.scraped_data
-            successful_data = [d for d in data if 'error' not in d and d.get('property_count', 0) > 0]
-            
-            if successful_data:
-                # Property distribution
-                st.subheader("🏠 Property Count Distribution")
-                property_counts = [d.get('property_count', 0) for d in successful_data]
-                fig = px.histogram(
-                    x=property_counts, 
-                    nbins=20, 
-                    title="Distribution of Property Counts Across Domains"
-                )
-                fig.update_xaxis(title="Number of Properties")
-                fig.update_yaxis(title="Number of Domains")
-                st.plotly_chart(fig, use_container_width=True)
+        uploaded_file = st.file_uploader(
+            "Drag and drop CSV file here",
+            type="csv",
+            help="Upload your CSV file for analysis"
+        )
+        
+        if uploaded_file is not None:
+            try:
+                df = pd.read_csv(uploaded_file)
+                st.session_state.csv_data = df
                 
-                # Top domains by properties
-                st.subheader("🏆 Top Domains by Property Count")
-                domain_data = [(d.get('domain', ''), d.get('property_count', 0), d.get('title', '')) 
-                              for d in successful_data]
-                domain_data.sort(key=lambda x: x[1], reverse=True)
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Rows", len(df))
+                with col2:
+                    st.metric("Columns", len(df.columns))
+                with col3:
+                    st.metric("Memory", f"{df.memory_usage(deep=True).sum() / 1024:.1f} KB")
+                with col4:
+                    st.metric("Missing", df.isnull().sum().sum())
                 
-                if domain_data:
-                    top_domains = domain_data[:15]
-                    domains, counts, titles = zip(*top_domains)
-                    
-                    fig = px.bar(
-                        x=list(counts), 
-                        y=list(domains), 
-                        orientation='h',
-                        title="Top 15 Domains by Property Count",
-                        hover_data={'titles': list(titles)}
-                    )
-                    fig.update_layout(yaxis={'categoryorder': 'total ascending'})
-                    fig.update_xaxis(title="Number of Properties")
-                    fig.update_yaxis(title="Domain")
-                    st.plotly_chart(fig, use_container_width=True)
+                # Data preview
+                st.subheader("Data Preview")
+                st.dataframe(df.head(), use_container_width=True)
                 
-                # Property locations map
-                st.subheader("🗺️ Property Locations Map")
-                locations_data = []
-                for d in successful_data:
-                    coords = d.get('location_coords', {})
-                    if isinstance(coords, dict) and 'latitude' in coords and 'longitude' in coords:
-                        locations_data.append({
-                            'lat': coords['latitude'],
-                            'lon': coords['longitude'],
-                            'domain': d.get('domain', ''),
-                            'property_count': d.get('property_count', 0),
-                            'title': d.get('title', '')[:50]
-                        })
+                # Data summary
+                st.subheader("Data Summary")
+                st.dataframe(df.describe(), use_container_width=True)
                 
-                if locations_data:
-                    df_map = pd.DataFrame(locations_data)
-                    fig = px.scatter_mapbox(
-                        df_map, 
-                        lat='lat', 
-                        lon='lon',
-                        size='property_count',
-                        hover_name='domain',
-                        hover_data=['title', 'property_count'],
-                        title="Property Locations Worldwide",
-                        mapbox_style="open-street-map",
-                        zoom=1
-                    )
-                    fig.update_layout(height=500)
-                    st.plotly_chart(fig, use_container_width=True)
-                else:
-                    st.info("No location coordinates found for mapping")
+                # Filtering
+                st.subheader("Filter Data")
+                col1, col2 = st.columns(2)
                 
-                # Country distribution
-                if st.session_state.country_data:
-                    st.subheader("🌍 Properties by Country")
-                    country_counts = {k: len(v) for k, v in st.session_state.country_data.items()}
-                    
-                    fig = px.pie(
-                        values=list(country_counts.values()),
-                        names=list(country_counts.keys()),
-                        title="Distribution of Properties by Country"
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
+                with col1:
+                    filter_column = st.selectbox("Column to filter", df.columns.tolist())
+                with col2:
+                    unique_values = df[filter_column].unique()
+                    selected_value = st.selectbox("Value", unique_values)
                 
-                # Lead quality analysis
-                if st.session_state.enriched_data:
-                    st.subheader("📊 Lead Quality Analysis")
-                    enriched = st.session_state.enriched_data
-                    
-                    # Lead grade distribution
-                    grades = [d.get('lead_grade', 'D') for d in enriched]
-                    grade_counts = pd.Series(grades).value_counts()
-                    
-                    fig = px.bar(
-                        x=grade_counts.index,
-                        y=grade_counts.values,
-                        title="Lead Quality Grade Distribution",
-                        color=grade_counts.values,
-                        color_continuous_scale="RdYlGn"
-                    )
-                    fig.update_xaxis(title="Lead Grade")
-                    fig.update_yaxis(title="Count")
-                    st.plotly_chart(fig, use_container_width=True)
-                    
-                    # Business type distribution
-                    business_types = [d.get('business_type', 'unknown') for d in enriched]
-                    type_counts = pd.Series(business_types).value_counts()
-                    
-                    fig = px.pie(
-                        values=type_counts.values,
-                        names=type_counts.index,
-                        title="Business Type Distribution"
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-            
-            else:
-                st.warning("No successful data with property counts available for visualization")
+                filtered_df = df[df[filter_column] == selected_value]
+                st.write(f"Filtered data ({len(filtered_df)} rows):")
+                st.dataframe(filtered_df, use_container_width=True)
+                
+                # Plotting
+                st.subheader("Plot Data")
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    x_col = st.selectbox("X-axis", df.columns.tolist(), key="x")
+                with col2:
+                    y_col = st.selectbox("Y-axis", df.columns.tolist(), key="y")
+                
+                if st.button("Generate Plot"):
+                    if pd.api.types.is_numeric_dtype(filtered_df[y_col]):
+                        fig = px.line(filtered_df, x=x_col, y=y_col, title=f"{y_col} vs {x_col}")
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        st.warning("Y-axis must be numeric")
+                        
+            except Exception as e:
+                st.error(f"Error loading CSV: {str(e)}")
         else:
-            st.info("No data available for visualization. Please run the scraper first.")
+            st.info("Upload a CSV file to begin analysis")
 
 if __name__ == "__main__":
     main()
