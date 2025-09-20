@@ -1,0 +1,10 @@
+# Proxy Configuration (Optional)
+# Add your HTTP proxies here, one per line
+# Format: http://proxy:port or http://username:password@proxy:port
+# Lines starting with # are ignored
+
+# Example (replace with real proxies):
+# http://proxy1.example.com:8080
+# http://proxy2.example.com:3128
+
+# For testing without proxies, leave this file empty or comment out all lines
