@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Country Categorization Script (Bonus Task 4)
-Groups/categorizes scraped records by country derived from address/location fields
+Groups/categorizes customer records by country derived from address/location fields
 """
 
 import json
@@ -20,14 +20,15 @@ def load_scraped_data(filename="scraped_data.json"):
         return []
 
 def categorize_by_country(data):
-    """Enhanced country categorization based on address, domain, and content analysis"""
+    """Enhanced country categorization for customer records only"""
     
     # Comprehensive country mapping with keywords
     country_mapping = {
         'USA': {
             'keywords': ['usa', 'united states', 'america', 'us ', ' us', 'california', 'florida', 
                         'texas', 'new york', 'nevada', 'hawaii', 'colorado', 'utah', 'arizona',
-                        'washington', 'oregon', 'michigan', 'illinois', 'georgia', 'virginia'],
+                        'washington', 'oregon', 'michigan', 'illinois', 'georgia', 'virginia',
+                        'ocean springs', 'government st'],
             'domains': ['.us'],
             'codes': ['usa', 'us']
         },
@@ -87,7 +88,7 @@ def categorize_by_country(data):
         },
         'PORTUGAL': {
             'keywords': ['portugal', 'portuguese', 'lisbon', 'porto', 'faro', 'braga', 
-                        'coimbra', 'algarve', 'madeira', 'azores'],
+                        'coimbra', 'algarve', 'madeira', 'azores', 'seixal'],
             'domains': ['.pt'],
             'codes': ['portugal', 'pt']
         },
@@ -96,12 +97,18 @@ def categorize_by_country(data):
                         'crete', 'rhodes', 'corfu', 'zakynthos'],
             'domains': ['.gr'],
             'codes': ['greece', 'gr']
+        },
+        'EGYPT': {
+            'keywords': ['egypt', 'egyptian', 'cairo', 'alexandria', 'luxor', 'aswan', 'giza'],
+            'domains': ['.eg'],
+            'codes': ['egypt', 'eg']
         }
     }
     
     categorized = {}
     categorization_stats = {
         'total_processed': 0,
+        'customer_records_processed': 0,
         'successfully_categorized': 0,
         'categorization_methods': {
             'address_keywords': 0,
@@ -112,10 +119,14 @@ def categorize_by_country(data):
     }
     
     for record in data:
-        if 'error' in record or record.get('status') == 'failed':
+        # Only process successful customer records
+        if (record.get('status') == 'failed' or 
+            record.get('belonging') != 'customer'):
             continue
         
         categorization_stats['total_processed'] += 1
+        categorization_stats['customer_records_processed'] += 1
+        
         country = None
         method_used = None
         
@@ -165,7 +176,11 @@ def categorize_by_country(data):
         enhanced_record = record.copy()
         enhanced_record['country'] = country
         enhanced_record['categorization_method'] = method_used
-        enhanced_record['categorization_confidence'] = 'high' if method_used == 'address_keywords' else 'medium' if method_used in ['domain_analysis', 'title_content'] else 'low'
+        enhanced_record['categorization_confidence'] = (
+            'high' if method_used == 'address_keywords' 
+            else 'medium' if method_used in ['domain_analysis', 'title_content'] 
+            else 'low'
+        )
         
         # Add to categorized data
         if country not in categorized:
@@ -210,15 +225,15 @@ def create_country_summary(categorized_data):
     return summary_data
 
 def main():
-    """Main function to categorize records by country"""
-    print("Starting country categorization...")
+    """Main function to categorize customer records by country"""
+    print("Starting country categorization for customer records...")
 
     # Load scraped data
     data = load_scraped_data()
     if not data:
         return
 
-    # Categorize by country
+    # Categorize by country (customer records only)
     categorized_data, stats = categorize_by_country(data)
 
     # Combine into one flat list of categorized records
@@ -226,22 +241,37 @@ def main():
     for country, records in categorized_data.items():
         all_records.extend(records)
 
-    # Save single CSV with country column (requirement: ONE CSV file)
+    if not all_records:
+        print("No customer records found for categorization.")
+        return
+
+    # Save single CSV with country column
     df_categorized = pd.json_normalize(all_records)
-    output_file = "lodgify_country_categorized.csv"
+    output_file = "customer_records_by_country.csv"
     df_categorized.to_csv(output_file, index=False, encoding='utf-8')
-    print(f"✅ Country categorized records saved to {output_file}")
+    print(f"✅ Customer records categorized by country saved to {output_file}")
 
-    # Print summary stats (optional, for console only)
-    print("\nSummary:")
+    # Print summary stats
+    print(f"\nCountry Categorization Summary:")
     print("=" * 50)
-    print(f"Total records processed: {stats['total_processed']}")
+    print(f"Total records in dataset: {len(data)}")
+    print(f"Customer records processed: {stats['customer_records_processed']}")
     print(f"Successfully categorized: {stats['successfully_categorized']}")
-    if stats['total_processed'] > 0:
-        rate = stats['successfully_categorized'] / stats['total_processed'] * 100
-        print(f"Categorization rate: {rate:.1f}%")
+    if stats['customer_records_processed'] > 0:
+        rate = stats['successfully_categorized'] / stats['customer_records_processed'] * 100
+        print(f"Categorization success rate: {rate:.1f}%")
+    
+    # Show country distribution
+    print(f"\nCustomer Records by Country:")
+    print("-" * 30)
+    for country, records in sorted(categorized_data.items(), key=lambda x: len(x[1]), reverse=True):
+        print(f"{country}: {len(records)} records")
+        # Show example domains for each country
+        example_domains = [r['domain'] for r in records[:2]]  # First 2 domains
+        if example_domains:
+            print(f"  Examples: {', '.join(example_domains)}")
+    
     print("Done!")
-
 
 if __name__ == "__main__":
     main()

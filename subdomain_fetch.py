@@ -1,195 +1,264 @@
 #!/usr/bin/env python3
 """
-Lodgify Subdomain Discovery Script
-Discovers Lodgify subdomains and outputs them as JSON array
+Fixed Lodgify Subdomain Discovery - Actually works
 """
 
 import requests
 import json
-import sys
-from urllib.parse import urlparse
+import time
+import random
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class LodgifySubdomainFinder:
-    """Discovers Lodgify subdomains using multiple methods"""
-    
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
-    
+
     def find_subdomains(self, domain="lodgify.com", max_results=200):
-        """Find subdomains using multiple methods, focusing on customer rental sites"""
-        print(f"Starting customer site discovery for {domain}...")
+        print(f"Finding subdomains for {domain}...")
         subdomains = set()
-        
-        # Lodgify corporate/service subdomains to exclude (these are NOT customer sites)
-        excluded_subdomains = {
-            'www', 'app', 'api', 'admin', 'blog', 'help', 'support', 'docs', 'documentation',
-            'academy', 'link', 'webflow', 'status', 'cdn', 'assets', 'static', 'images',
-            'mail', 'email', 'smtp', 'ftp', 'dev', 'staging', 'test', 'demo', 'sandbox',
-            'portal', 'dashboard', 'console', 'manage', 'control', 'system', 'internal',
-            'secure', 'login', 'auth', 'oauth', 'sso', 'identity', 'account', 'billing',
-            'payments', 'checkout', 'cart', 'shop', 'store', 'marketplace', 'platform'
-        }
-        
-        # Method 1: Certificate Transparency (with customer site filtering)
+
+        # Method 1: crt.sh with better parsing
         try:
-            print("Searching certificate transparency logs for customer rental sites...")
+            print("Checking Certificate Transparency logs...")
             url = f"https://crt.sh/?q=%.{domain}&output=json"
             response = self.session.get(url, timeout=30)
             if response.status_code == 200:
-                certificates = response.json()
-                customer_sites = 0
-                for cert in certificates[:1000]:  # Increased limit for better coverage
-                    name = cert.get('name_value', '')
-                    if name:
-                        domains = name.split('\n')
-                        for d in domains:
-                            d = d.strip().lower()
-                            if (d.endswith(f'.{domain}') and 
-                                not d.startswith('*') and 
-                                len(d.split('.')) >= 3):
-                                # Extract subdomain part
-                                subdomain_part = d.replace(f'.{domain}', '')
-                                # Skip corporate subdomains - focus on customer sites
-                                if subdomain_part not in excluded_subdomains:
-                                    # Only validate promising subdomains (not random strings)
-                                    if self._looks_like_business_name(subdomain_part):
-                                        test_url = f"https://{d}"
-                                        subdomains.add(test_url)
-                                        customer_sites += 1
-                                        print(f"📋 Added subdomain: {test_url}")
-                                        if customer_sites >= 10:  # Limit cert validation
-                                            break
-                print(f"Found {customer_sites} potential customer sites from certificate logs")
+                data = response.json()
+                for cert in data:
+                    names = cert.get('name_value', '').split('\n')
+                    for name in names:
+                        name = name.strip()
+                        if name.endswith(f'.{domain}') and not name.startswith('*'):
+                            if self._is_customer_subdomain(name):
+                                subdomains.add(f"https://{name}")
+            print(f"Found {len(subdomains)} candidates from CT logs")
         except Exception as e:
-            print(f"Certificate search failed: {str(e)}")
-        
-        # Method 1.5: Add known working examples from task
-        print("Testing known working examples...")
-        known_working = [
-            'https://bandycanyon.lodgify.com',
-            'https://riversresortrentals.lodgify.com', 
-            'https://tideway-hotel.lodgify.com'
-        ]
-        
-        for site in known_working:
-            if self._quick_validate_subdomain(site):
-                subdomains.add(site)
-                print(f"✅ Confirmed working: {site}")
-            else:
-                print(f"❌ Not accessible: {site}")
-        
-        # Method 2: Generate and validate realistic patterns (focused approach)
-        print("Generating and validating realistic patterns...")
-        realistic_patterns = [
-            # High-probability patterns based on common rental business names
-            'oceanview', 'beachfront', 'mountainview', 'lakeside', 'riverside',
-            'sunset', 'sunrise', 'paradise', 'golden', 'royal', 'luxury',
-            'villa', 'resort', 'hotel', 'inn', 'lodge', 'cabin', 'cottage',
-            'beachhouse', 'mountainlodge', 'cityloft', 'seaside', 'hillside',
-            # Newly added ones
-            'coastal', 'bayside', 'hilltop', 'downtown', 'uptown', 'retreat',
-            'escape', 'hideaway', 'sanctuary', 'oasis', 'haven', 'manor',
-            'estate', 'chateau', 'penthouse', 'loft', 'studio', 'apartment',
-            'condo', 'townhouse', 'farmhouse', 'ranch', 'chalet', 'bungalow'
-        ]
+            print(f"CT logs failed: {e}")
 
-        # Dynamically generate location + type combinations
-        locations = ['beach', 'mountain', 'lake', 'city', 'country', 'forest']
-        types = ['villa', 'house', 'cabin', 'resort', 'hotel']
-        for loc in locations:
-            for typ in types:
-                realistic_patterns.append(f"{loc}{typ}")
-        
-        validated_generated = 0
-        for pattern in realistic_patterns:
-            test_url = f"https://{pattern}.{domain}"
-            if self._quick_validate_subdomain(test_url):
-                subdomains.add(test_url)
-                validated_generated += 1
-                print(f"✅ Found working: {test_url}")
-                if validated_generated >= 20:  # Limit to avoid too many requests
-                    break
-        
-        if validated_generated > 0:
-            print(f"Found {validated_generated} working generated subdomains")
-        else:
-            print("No generated patterns found working sites")
-        
-        final_list = list(subdomains)[:max_results]
-        print(f"Total REAL working sites discovered: {len(final_list)}")
-        return final_list
-    
-    def _quick_validate_subdomain(self, url):
-        """Validation that handles Lodgify's anti-bot protection"""
+        # Method 2: DNSdumpster API
         try:
-            # Use better headers to avoid blocking
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
-                'Connection': 'keep-alive'
-            }
+            print("Trying DNSdumpster...")
+            dns_subs = self._get_dnsdumpster_subdomains(domain)
+            subdomains.update(dns_subs)
+            print(f"Added {len(dns_subs)} from DNSdumpster")
+        except Exception as e:
+            print(f"DNSdumpster failed: {e}")
+
+        # Method 3: Extensive wordlist testing
+        print("Testing common business names...")
+        wordlist_subs = self._test_wordlist(domain, max_results)
+        subdomains.update(wordlist_subs)
+        print(f"Added {len(wordlist_subs)} from wordlist testing")
+
+        # Validate all found subdomains
+        print("Validating discovered subdomains...")
+        validated = []
+        subdomain_list = list(subdomains)
+        
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = {executor.submit(self._validate_subdomain, url): url 
+                      for url in subdomain_list[:max_results*2]}
             
-            response = self.session.get(url, timeout=10, allow_redirects=True, headers=headers)
-            
-            # Accept 200 (OK), 403 (Forbidden - site exists but blocking), 401 (Unauthorized)
-            if response.status_code in [403, 401]:
-                # Site exists but is blocking us - assume it's real
-                print(f"🔒 Site exists but blocking access: {url}")
-                return True
-            elif response.status_code == 200:
-                # Check content for rental indicators
-                content = response.text.lower()
-                
-                expired_indicators = [
-                    'domain expired', 'website expired', 'domain has expired',
-                    'this domain may be for sale', 'parked domain', 'coming soon',
-                    'under construction', 'page not found', '404', 'error 404'
-                ]
-                
-                if any(indicator in content for indicator in expired_indicators):
-                    return False
-                
-                if len(content) > 1000:
-                    return True
-                
+            for future in as_completed(futures):
+                url = futures[future]
+                try:
+                    if future.result():
+                        validated.append(url)
+                        if len(validated) >= max_results:
+                            break
+                except:
+                    pass
+
+        print(f"Final validated subdomains: {len(validated)}")
+        return validated[:max_results]
+
+    def _is_customer_subdomain(self, domain):
+        """Check if domain looks like a customer subdomain"""
+        subdomain = domain.split('.')[0].lower()
+        
+        # Exclude technical/corporate subdomains
+        excluded = {
+            'www', 'api', 'app', 'admin', 'blog', 'help', 'support', 'docs',
+            'cdn', 'assets', 'static', 'mail', 'ftp', 'dev', 'test', 'staging',
+            'portal', 'dashboard', 'auth', 'login', 'billing', 'payments',
+            'feedback', 'roadmap', 'status', 'updates', 'academy', 'platform'
+        }
+        
+        if subdomain in excluded:
             return False
             
-        except:
+        # Must be reasonable length
+        if len(subdomain) < 3 or len(subdomain) > 50:
             return False
-    
-    def _looks_like_business_name(self, subdomain):
-        """Check if subdomain looks like a real business name (not random string)"""
-        if len(subdomain) > 20 or len(subdomain) < 3:
-            return False
-        if sum(c.isdigit() for c in subdomain) > len(subdomain) * 0.5:
-            return False
-        test_patterns = ['test', 'temp', 'demo', 'sample', 'example']
-        if any(pattern in subdomain for pattern in test_patterns):
-            return False
+            
         return True
 
+    def _get_dnsdumpster_subdomains(self, domain):
+        """Get subdomains from DNSdumpster"""
+        subdomains = set()
+        try:
+            # DNSdumpster requires CSRF token
+            session = requests.Session()
+            url = "https://dnsdumpster.com/"
+            
+            # Get CSRF token
+            resp = session.get(url)
+            if resp.status_code != 200:
+                return subdomains
+                
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            csrf_token = soup.find('input', {'name': 'csrfmiddlewaretoken'})
+            
+            if not csrf_token:
+                return subdomains
+                
+            csrf_value = csrf_token.get('value')
+            
+            # Submit domain search
+            data = {
+                'csrfmiddlewaretoken': csrf_value,
+                'targetip': domain
+            }
+            
+            headers = {
+                'Referer': url,
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            
+            resp = session.post(url, data=data, headers=headers)
+            if resp.status_code == 200:
+                soup = BeautifulSoup(resp.text, 'html.parser')
+                # Parse subdomain results
+                for row in soup.find_all('tr'):
+                    cells = row.find_all('td')
+                    if len(cells) >= 1:
+                        text = cells[0].get_text()
+                        if f'.{domain}' in text:
+                            parts = text.split()
+                            for part in parts:
+                                if part.endswith(f'.{domain}'):
+                                    if self._is_customer_subdomain(part):
+                                        subdomains.add(f"https://{part}")
+                                        
+        except Exception as e:
+            print(f"DNSdumpster error: {e}")
+            
+        return subdomains
+
+    def _test_wordlist(self, domain, limit=100):
+        """Test common business/hotel/rental names"""
+        subdomains = set()
+        
+        # Comprehensive wordlist for vacation rentals, hotels, etc.
+        wordlist = [
+            # Location-based
+            'oceanview', 'beachfront', 'seaside', 'oceanside', 'coastline',
+            'mountainview', 'hillside', 'lakeside', 'riverside', 'waterfront',
+            'downtown', 'midtown', 'uptown', 'cityview', 'harbor',
+            'bayside', 'cove', 'inlet', 'beach', 'shores',
+            
+            # Property types
+            'villa', 'resort', 'hotel', 'inn', 'lodge', 'cabin', 'cottage',
+            'apartment', 'condo', 'suite', 'studio', 'loft', 'penthouse',
+            'guesthouse', 'bnb', 'hostel', 'retreat', 'sanctuary',
+            
+            # Descriptive words
+            'luxury', 'premium', 'deluxe', 'royal', 'grand', 'imperial',
+            'elegant', 'boutique', 'exclusive', 'private', 'secluded',
+            'peaceful', 'tranquil', 'serene', 'paradise', 'oasis',
+            'golden', 'silver', 'diamond', 'pearl', 'crystal',
+            'sunset', 'sunrise', 'twilight', 'dawn', 'evening',
+            
+            # Business names patterns
+            'home', 'house', 'place', 'stay', 'getaway', 'escape',
+            'hideaway', 'refuge', 'haven', 'nest', 'corner',
+            'collection', 'properties', 'rentals', 'stays', 'homes',
+            
+            # Geographic/cultural
+            'palm', 'pine', 'oak', 'cedar', 'willow', 'maple',
+            'rose', 'garden', 'park', 'square', 'court', 'plaza',
+            'tower', 'heights', 'ridge', 'valley', 'canyon',
+            'island', 'cape', 'point', 'bay', 'gulf', 'strait',
+            
+            # Specific business names (common patterns)
+            'bluewater', 'whitesand', 'greenvale', 'redrock', 'blackstone',
+            'northstar', 'southbay', 'eastview', 'westend', 'central',
+            'first', 'main', 'grand', 'royal', 'crown', 'summit'
+        ]
+        
+        print(f"Testing {len(wordlist)} potential subdomains...")
+        
+        # Test subdomains in batches
+        batch_size = 20
+        for i in range(0, len(wordlist), batch_size):
+            batch = wordlist[i:i+batch_size]
+            
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                futures = {executor.submit(self._test_subdomain, word, domain): word 
+                          for word in batch}
+                
+                for future in as_completed(futures):
+                    word = futures[future]
+                    try:
+                        if future.result():
+                            url = f"https://{word}.{domain}"
+                            subdomains.add(url)
+                            print(f"  Found: {url}")
+                            
+                            if len(subdomains) >= limit:
+                                return subdomains
+                    except:
+                        pass
+            
+            time.sleep(1)  # Rate limiting
+        
+        return subdomains
+
+    def _test_subdomain(self, subdomain, domain):
+        """Test if a specific subdomain exists"""
+        url = f"https://{subdomain}.{domain}"
+        return self._validate_subdomain(url)
+
+    def _validate_subdomain(self, url):
+        """Validate subdomain with proper error handling"""
+        try:
+            response = self.session.get(url, timeout=10, allow_redirects=True)
+            
+            if response.status_code == 200:
+                content = response.text.lower()
+                # Check for actual content, not error pages
+                if len(content) > 1000 and 'lodgify' in content:
+                    return True
+                    
+            # Some sites might block but still exist
+            elif response.status_code in [403, 401, 429]:
+                return True
+                
+        except requests.exceptions.RequestException:
+            pass
+            
+        return False
+
 def main():
-    """Main function to discover and save subdomains"""
     finder = LodgifySubdomainFinder()
-    
-    subdomains = finder.find_subdomains()
+    subdomains = finder.find_subdomains(max_results=200)
     
     output_file = "discovered_subdomains.json"
-    with open(output_file, 'w', encoding='utf-8') as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(subdomains, f, indent=2, ensure_ascii=False)
     
-    print(f"Subdomains saved to {output_file}")
-    print(f"Found {len(subdomains)} total subdomains")
+    print(f"\nSaved {len(subdomains)} subdomains to {output_file}")
     
-    print("\nFirst 10 discovered subdomains:")
-    for i, subdomain in enumerate(subdomains[:10], 1):
-        print(f"{i:2d}. {subdomain}")
-    
-    return subdomains
+    if subdomains:
+        print(f"\nFirst 10 discovered:")
+        for i, url in enumerate(subdomains[:10], 1):
+            print(f"{i:2d}. {url}")
+    else:
+        print("No subdomains found - check internet connection and methods")
 
 if __name__ == "__main__":
     main()
