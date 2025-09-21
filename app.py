@@ -794,9 +794,24 @@ def main():
             st.markdown('</div>', unsafe_allow_html=True)
             
             # Data preview
-            st.subheader("📋 Lead Generation Data (100 Subdomains)")
-            preview_df = pd.json_normalize(successful_data)
-            st.dataframe(preview_df, use_container_width=True, height=400)
+            st.subheader("📋 Subdomain Data")
+            if successful_data:
+                # Create preview dataframe with key fields
+                preview_records = []
+                for record in successful_data[:20]:  # Show first 20
+                    preview_records.append({
+                        'Domain': record.get('domain', 'N/A'),
+                        'Business Name': record.get('title', 'N/A')[:50],
+                        'Properties': record.get('property_count', 0),
+                        'Email': 'Yes' if record.get('email') else 'No',
+                        'Phone': 'Yes' if record.get('phone') else 'No',
+                        'Address': 'Yes' if record.get('address') else 'No',
+                        'Status': record.get('status', 'N/A')
+                    })
+                
+                if preview_records:
+                    preview_df = pd.DataFrame(preview_records)
+                    st.dataframe(preview_df, use_container_width=True)
             
             # Country categorization
             st.subheader("🌍 Country Categorization")

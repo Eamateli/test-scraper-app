@@ -57,10 +57,9 @@ class LodgifySubdomainFinder:
                                     # Only validate promising subdomains (not random strings)
                                     if self._looks_like_business_name(subdomain_part):
                                         test_url = f"https://{d}"
-                                        if self._quick_validate_subdomain(test_url):
-                                            subdomains.add(test_url)
-                                            customer_sites += 1
-                                            print(f"✅ Real customer site: {test_url}")
+                                        subdomains.add(test_url)
+                                        customer_sites += 1
+                                        print(f"📋 Added subdomain: {test_url}")
                                         if customer_sites >= 10:  # Limit cert validation
                                             break
                 print(f"Found {customer_sites} potential customer sites from certificate logs")
@@ -89,8 +88,20 @@ class LodgifySubdomainFinder:
             'oceanview', 'beachfront', 'mountainview', 'lakeside', 'riverside',
             'sunset', 'sunrise', 'paradise', 'golden', 'royal', 'luxury',
             'villa', 'resort', 'hotel', 'inn', 'lodge', 'cabin', 'cottage',
-            'beachhouse', 'mountainlodge', 'cityloft', 'seaside', 'hillside'
+            'beachhouse', 'mountainlodge', 'cityloft', 'seaside', 'hillside',
+            # Newly added ones
+            'coastal', 'bayside', 'hilltop', 'downtown', 'uptown', 'retreat',
+            'escape', 'hideaway', 'sanctuary', 'oasis', 'haven', 'manor',
+            'estate', 'chateau', 'penthouse', 'loft', 'studio', 'apartment',
+            'condo', 'townhouse', 'farmhouse', 'ranch', 'chalet', 'bungalow'
         ]
+
+        # Dynamically generate location + type combinations
+        locations = ['beach', 'mountain', 'lake', 'city', 'country', 'forest']
+        types = ['villa', 'house', 'cabin', 'resort', 'hotel']
+        for loc in locations:
+            for typ in types:
+                realistic_patterns.append(f"{loc}{typ}")
         
         validated_generated = 0
         for pattern in realistic_patterns:
@@ -133,7 +144,6 @@ class LodgifySubdomainFinder:
                 # Check content for rental indicators
                 content = response.text.lower()
                 
-                # Red flags - expired/parked/error pages
                 expired_indicators = [
                     'domain expired', 'website expired', 'domain has expired',
                     'this domain may be for sale', 'parked domain', 'coming soon',
@@ -143,8 +153,7 @@ class LodgifySubdomainFinder:
                 if any(indicator in content for indicator in expired_indicators):
                     return False
                 
-                # For Lodgify sites, just check if it has substantial content
-                if len(content) > 1000:  # Has substantial content
+                if len(content) > 1000:
                     return True
                 
             return False
@@ -154,29 +163,21 @@ class LodgifySubdomainFinder:
     
     def _looks_like_business_name(self, subdomain):
         """Check if subdomain looks like a real business name (not random string)"""
-        # Skip random/generated strings
         if len(subdomain) > 20 or len(subdomain) < 3:
             return False
-        
-        # Skip if mostly numbers or random characters
         if sum(c.isdigit() for c in subdomain) > len(subdomain) * 0.5:
             return False
-        
-        # Skip obvious test/temp domains
         test_patterns = ['test', 'temp', 'demo', 'sample', 'example']
         if any(pattern in subdomain for pattern in test_patterns):
             return False
-        
         return True
 
 def main():
     """Main function to discover and save subdomains"""
     finder = LodgifySubdomainFinder()
     
-    # Discover subdomains
     subdomains = finder.find_subdomains()
     
-    # Save to JSON file
     output_file = "discovered_subdomains.json"
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(subdomains, f, indent=2, ensure_ascii=False)
@@ -184,7 +185,6 @@ def main():
     print(f"Subdomains saved to {output_file}")
     print(f"Found {len(subdomains)} total subdomains")
     
-    # Print first 10 for verification
     print("\nFirst 10 discovered subdomains:")
     for i, subdomain in enumerate(subdomains[:10], 1):
         print(f"{i:2d}. {subdomain}")

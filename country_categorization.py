@@ -228,7 +228,7 @@ def main():
 
     # Save single CSV with country column (requirement: ONE CSV file)
     df_categorized = pd.json_normalize(all_records)
-    output_file = "country_categorized_records.csv"
+    output_file = "lodgify_country_categorized.csv"
     df_categorized.to_csv(output_file, index=False, encoding='utf-8')
     print(f"✅ Country categorized records saved to {output_file}")
 
