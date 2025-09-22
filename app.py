@@ -833,7 +833,7 @@ def main():
     with tab3:
         st.markdown("## CSV Analysis")
         
-        
+
         uploaded_file = st.file_uploader("Upload CSV", type="csv")
         st.markdown('</div>', unsafe_allow_html=True)
         
@@ -846,6 +846,6 @@ def main():
             
             st.subheader("📋 Raw Data Preview")
             st.dataframe(df_csv.head(), use_container_width=True)
-
+ 
 if __name__ == "__main__":
     main()
