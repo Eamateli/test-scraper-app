@@ -29,12 +29,12 @@ deactivate
 ```
 When you want to deactivate the virtual environment, run:
 
--- Clone git repo
+- Clone git repo
 ```bash
 git clone https://github.com/Eamateli/test-scraper-app.git
 
 ```
-
+- Follow the rest of the instructions.
 
 
 ### Step 1: Streamlit Web App 
