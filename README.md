@@ -23,6 +23,7 @@ source venv/bin/activate
 ```bash
 . venv/Scripts/activate  or source venv/Scripts/activate
 ```
+When you want to deactivate the virtual environment, run:
 ```bash
 deactivate
 ```
