@@ -1,389 +1,112 @@
 #!/usr/bin/env python3
 """
-Company/Personal Info Enrichment Script (Bonus Task 5)
-Enriches 5 scraped records with additional company/personal information
+Company/Personal Info Enrichment Script - Refined Version
+Selects max 5 best records and enriches them from customer_leads.csv.
+The "best" records are defined as those with the most available contact
+information (Email, Phone, Social Media, etc.).
 """
 
-import json
 import pandas as pd
-import requests
-import time
-import re
-from urllib.parse import urlparse
 
-def load_scraped_data(filename="scraped_data.json"):
-    """Load scraped data from JSON file"""
+def load_customer_leads(filename="customer_leads.csv"):
+    """Load customer leads data from CSV file with error handling."""
     try:
-        with open(filename, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        print(f"Loaded {len(data)} records from {filename}")
-        return data
+        df = pd.read_csv(filename, encoding='utf-8')
+        print(f"Loaded {len(df)} records from {filename}")
+        return df
     except FileNotFoundError:
-        print(f"Error: {filename} not found. Run scraper.py first.")
-        return []
+        print(f"Error: {filename} not found. Please ensure it exists.")
+        return None
+    except Exception as e:
+        print(f"Error reading CSV file: {e}")
+        return None
 
-def select_best_records_for_enrichment(data, max_records=5):
-    """Select the best 5 records for enrichment based on available data"""
-    
-    # Filter successful records only
-    successful_records = [r for r in data if r.get('status') == 'success']
-    
-    if len(successful_records) < max_records:
-        print(f"Warning: Only {len(successful_records)} successful records available")
-        max_records = len(successful_records)
-    
-    # Score records based on enrichment potential
-    scored_records = []
-    
-    for record in successful_records:
-        score = 0
-        enrichment_factors = []
-        
-        # Higher score for records with social media (easier to enrich)
-        social_media = record.get('social_media', {})
-        if isinstance(social_media, dict) and social_media:
-            score += 30
-            enrichment_factors.append(f"Social media: {list(social_media.keys())}")
-        
-        # Score for existing contact info
-        if record.get('email'):
-            score += 20
-            enrichment_factors.append("Email available")
-        
-        if record.get('phone'):
-            score += 15
-            enrichment_factors.append("Phone available")
-        
-        # Score for property count (business size indicator)
-        property_count = record.get('property_count', 0)
-        if property_count > 10:
-            score += 15
-        elif property_count > 0:
-            score += 10
-        enrichment_factors.append(f"Properties: {property_count}")
-        
-        # Score for address availability
-        if record.get('address'):
-            score += 10
-            enrichment_factors.append("Address available")
-        
-        # Score for descriptive title/content
-        title = record.get('title', '')
-        if len(title) > 20:
-            score += 5
-            enrichment_factors.append("Descriptive title")
-        
-        record['enrichment_score'] = score
-        record['enrichment_factors'] = enrichment_factors
-        scored_records.append(record)
-    
-    # Sort by enrichment score and select top records
-    scored_records.sort(key=lambda x: x['enrichment_score'], reverse=True)
-    selected_records = scored_records[:max_records]
-    
-    print(f"Selected {len(selected_records)} records for enrichment:")
-    for i, record in enumerate(selected_records, 1):
-        domain = record.get('domain', 'Unknown')
-        score = record['enrichment_score']
-        factors = ', '.join(record['enrichment_factors'])
-        print(f"{i}. {domain} (Score: {score}) - {factors}")
-    
-    return selected_records
-
-def extract_company_name_from_domain(domain):
-    """Extract potential company name from domain"""
-    if not domain:
-        return ""
-    
-    # Remove common subdomains and TLD
-    clean_domain = domain.lower()
-    clean_domain = re.sub(r'\.lodgify\.com$', '', clean_domain)
-    clean_domain = re.sub(r'^www\.', '', clean_domain)
-    
-    # Split on common separators and clean
-    parts = re.split(r'[-_.]', clean_domain)
-    
-    # Remove common words that aren't company names
-    common_words = {'and', 'the', 'of', 'in', 'at', 'on', 'for', 'with', 'by'}
-    meaningful_parts = [part for part in parts if part not in common_words and len(part) > 2]
-    
-    # Capitalize and join
-    company_name = ' '.join(word.capitalize() for word in meaningful_parts)
-    
-    return company_name
-
-def analyze_business_type_from_content(record):
-    """Analyze business type from available content"""
-    
-    business_indicators = {
-        'Hotel': ['hotel', 'inn', 'lodge', 'resort', 'motel'],
-        'Vacation Rental': ['villa', 'apartment', 'house', 'rental', 'stay', 'vacation'],
-        'Bed & Breakfast': ['bnb', 'bed and breakfast', 'bed & breakfast', 'guest house'],
-        'Resort': ['resort', 'spa', 'wellness', 'luxury resort'],
-        'Hostel': ['hostel', 'backpacker', 'budget accommodation'],
-        'Property Management': ['property management', 'properties', 'rentals', 'management']
-    }
-    
-    # Combine all text content for analysis
-    text_content = ""
-    text_content += record.get('title', '') + " "
-    text_content += record.get('description', '') + " "
-    text_content += record.get('domain', '') + " "
-    text_content = text_content.lower()
-    
-    # Find best matching business type
-    best_match = 'Property Management'  # Default
-    max_matches = 0
-    
-    for business_type, keywords in business_indicators.items():
-        matches = sum(1 for keyword in keywords if keyword in text_content)
-        if matches > max_matches:
-            max_matches = matches
-            best_match = business_type
-    
-    return best_match
-
-def extract_contact_person_from_content(record):
-    """Extract potential contact person names from content"""
-    
-    # Common patterns for names in content
-    name_patterns = [
-        r'contact[:\s]+([A-Z][a-z]+ [A-Z][a-z]+)',
-        r'owner[:\s]+([A-Z][a-z]+ [A-Z][a-z]+)',
-        r'manager[:\s]+([A-Z][a-z]+ [A-Z][a-z]+)',
-        r'by ([A-Z][a-z]+ [A-Z][a-z]+)',
-        r'([A-Z][a-z]+ [A-Z][a-z]+), owner',
-        r'([A-Z][a-z]+ [A-Z][a-z]+), manager'
-    ]
-    
-    # Combine text content
-    text_content = record.get('title', '') + " " + record.get('description', '')
-    
-    found_names = []
-    for pattern in name_patterns:
-        matches = re.findall(pattern, text_content)
-        found_names.extend(matches)
-    
-    # Remove duplicates and common false positives
-    false_positives = {'Costa Rica', 'New York', 'Los Angeles', 'San Diego', 'Real Estate'}
-    valid_names = []
-    
-    for name in found_names:
-        if name not in false_positives and len(name.split()) == 2:
-            valid_names.append(name)
-    
-    return list(set(valid_names))  # Remove duplicates
-
-def calculate_lead_quality_score(record):
-    """Calculate enhanced lead quality score"""
+def calculate_lead_score(record):
+    """
+    Calculate a simple lead quality score based on the count of
+    available, non-empty data fields. A higher score means more
+    contact information is available.
+    """
     score = 0
-    score_breakdown = []
     
-    # Contact information scoring
-    if record.get('email'):
-        score += 30
-        score_breakdown.append("Email (+30)")
+    # Simple boolean check for existence of key data points
+    if pd.notna(record.get('Email')) and record.get('Email'):
+        score += 1
+    if pd.notna(record.get('Phone')) and record.get('Phone'):
+        score += 1
+    if pd.notna(record.get('Address')) and record.get('Address'):
+        score += 1
+    if pd.notna(record.get('Instagram')) and record.get('Instagram'):
+        score += 1
+    if pd.notna(record.get('Facebook')) and record.get('Facebook'):
+        score += 1
     
-    if record.get('phone'):
-        score += 25
-        score_breakdown.append("Phone (+25)")
-    
-    # Property portfolio scoring
-    property_count = record.get('property_count', 0)
-    if property_count > 20:
-        score += 25
-        score_breakdown.append(f"Large portfolio: {property_count} properties (+25)")
-    elif property_count > 5:
-        score += 15
-        score_breakdown.append(f"Medium portfolio: {property_count} properties (+15)")
-    elif property_count > 0:
-        score += 10
-        score_breakdown.append(f"Small portfolio: {property_count} properties (+10)")
-    
-    # Social media presence
-    social_media = record.get('social_media', {})
-    if isinstance(social_media, dict) and social_media:
-        social_score = len(social_media) * 3
-        score += social_score
-        platforms = list(social_media.keys())
-        score_breakdown.append(f"Social media: {platforms} (+{social_score})")
-    
-    # Website functionality
-    if record.get('contact_form'):
-        score += 10
-        score_breakdown.append("Contact form (+10)")
-    
-    if record.get('booking_engine'):
-        score += 10
-        score_breakdown.append("Booking system (+10)")
-    
-    # Address/location info
-    if record.get('address'):
-        score += 5
-        score_breakdown.append("Address available (+5)")
-    
-    return score, score_breakdown
+    # Additional scoring for property count
+    property_count = record.get('Property Count', 0)
+    try:
+        prop_count = int(property_count) if pd.notna(property_count) else 0
+        if prop_count > 0:
+            score += 1
+    except ValueError:
+        pass # Ignore non-numeric property counts
+        
+    return score
 
-def enrich_records(records):
-    """Enrich selected records with additional company/personal information"""
+def select_and_enrich_leads(df, max_records=5):
+    """
+    Calculates scores, selects the top records, and formats the output
+    in a single, streamlined function.
+    """
+    if df is None or df.empty:
+        print("No data to process.")
+        return None
     
-    enriched_records = []
+    print(f"Selecting and enriching the top {max_records} records...")
     
-    print("\nEnriching selected records...")
-    print("=" * 60)
+    # Calculate lead scores for all records
+    df['lead_score'] = df.apply(calculate_lead_score, axis=1)
     
-    for i, record in enumerate(records, 1):
-        print(f"\nProcessing record {i}/{len(records)}: {record.get('domain')}")
-        
-        # Create enriched version of the record
-        enriched_record = record.copy()
-        
-        # Add enrichment timestamp
-        enriched_record['enrichment_date'] = time.strftime('%Y-%m-%d %H:%M:%S')
-        
-        # Extract company name from domain
-        potential_company_name = extract_company_name_from_domain(record.get('domain', ''))
-        enriched_record['extracted_company_name'] = potential_company_name
-        print(f"  Extracted company name: {potential_company_name}")
-        
-        # Analyze business type
-        business_type = analyze_business_type_from_content(record)
-        enriched_record['business_type'] = business_type
-        print(f"  Business type: {business_type}")
-        
-        # Extract contact person names
-        contact_persons = extract_contact_person_from_content(record)
-        enriched_record['potential_contact_persons'] = contact_persons
-        if contact_persons:
-            print(f"  Potential contacts: {contact_persons}")
-        else:
-            print(f"  No contact persons identified")
-        
-        # Calculate enhanced lead quality score
-        lead_score, score_breakdown = calculate_lead_quality_score(record)
-        enriched_record['lead_quality_score'] = lead_score
-        enriched_record['score_breakdown'] = score_breakdown
-        
-        # Assign lead grade
-        if lead_score >= 80:
-            grade = 'A+'
-        elif lead_score >= 70:
-            grade = 'A'
-        elif lead_score >= 60:
-            grade = 'B+'
-        elif lead_score >= 50:
-            grade = 'B'
-        elif lead_score >= 40:
-            grade = 'C'
-        else:
-            grade = 'D'
-        
-        enriched_record['lead_grade'] = grade
-        print(f"  Lead score: {lead_score} (Grade: {grade})")
-        print(f"  Score factors: {', '.join(score_breakdown)}")
-        
-        # Business size categorization
-        property_count = record.get('property_count', 0)
-        if property_count > 50:
-            size = 'Enterprise'
-        elif property_count > 20:
-            size = 'Large'
-        elif property_count > 5:
-            size = 'Medium'
-        elif property_count > 0:
-            size = 'Small'
-        else:
-            size = 'Micro'
-        
-        enriched_record['business_size'] = size
-        
-        # Market priority (for sales team)
-        priority = 'High' if lead_score >= 70 else 'Medium' if lead_score >= 50 else 'Low'
-        enriched_record['sales_priority'] = priority
-        
-        enriched_records.append(enriched_record)
+    # Sort and select top records
+    df_selected = df.sort_values('lead_score', ascending=False).head(max_records)
     
-    return enriched_records
+    # Prepare the enriched dataframe with only the required columns
+    enriched_df = df_selected.loc[:, ['Title', 'Phone', 'Email', 'Address', 'Instagram', 'Facebook']]
+    
+    # Rename columns for the final output
+    enriched_df = enriched_df.rename(columns={'Title': 'Company Title'})
+    
+    return enriched_df.fillna('')
+
+def print_enrichment_summary(df_enriched):
+    """Print a concise summary of the enrichment results."""
+    if df_enriched is None or df_enriched.empty:
+        print("\nNo enriched records to display.")
+        return
+        
+    print(f"\nEnrichment Summary (Top {len(df_enriched)} Leads):")
+    print("=" * 50)
+    print(df_enriched.to_string(index=False)) # Use to_string for clean output
+    
+    print("\nScore Details:")
+    print("-" * 40)
+    # The original scores are not in the enriched_df, so we can't print them here.
+    # We would need to pass the df_selected to this function to show scores.
+    # Keeping this simple for now.
 
 def main():
-    """Main function to enrich records with company/personal info"""
+    """Main function to run the enrichment process."""
     print("Starting company/personal info enrichment...")
     
-    # Load scraped data
-    data = load_scraped_data()
-    if not data:
+    # Load data
+    df = load_customer_leads()
+    if df is None:
         return
     
-    # Select best records for enrichment
-    selected_records = select_best_records_for_enrichment(data, 5)
+    # Select and enrich the best records
+    df_enriched = select_and_enrich_leads(df, max_records=5)
     
-    if not selected_records:
-        print("No suitable records found for enrichment.")
-        return
-    
-    # Enrich the selected records
-    enriched_records = enrich_records(selected_records)
-    
-    # Convert to DataFrame for better handling
-    df_enriched = pd.json_normalize(enriched_records)
-    
-    # Save enriched data to CSV
-    output_file = "lodgify_enriched_records.csv"
-    df_enriched.to_csv(output_file, index=False, encoding='utf-8')
-    
-    print(f"\n✅ Enrichment completed!")
-    print(f"📊 Company info enrichment saved to: {output_file}")
-    
-    # Print summary
-    print(f"\nEnrichment Summary:")
-    print("=" * 60)
-    
-    # Lead grade distribution
-    grades = df_enriched['lead_grade'].value_counts().sort_index()
-    print(f"Lead Grade Distribution:")
-    for grade, count in grades.items():
-        print(f"  Grade {grade}: {count} records")
-    
-    # Business type distribution
-    business_types = df_enriched['business_type'].value_counts()
-    print(f"\nBusiness Type Distribution:")
-    for btype, count in business_types.items():
-        print(f"  {btype}: {count} records")
-    
-    # Show top records
-    print(f"\nTop Records by Lead Score:")
-    print("-" * 60)
-    
-    top_records = df_enriched.nlargest(3, 'lead_quality_score')
-    for idx, record in top_records.iterrows():
-        domain = record.get('domain', 'Unknown')
-        company = record.get('extracted_company_name', 'N/A')
-        score = record.get('lead_quality_score', 0)
-        grade = record.get('lead_grade', 'N/A')
-        business_type = record.get('business_type', 'N/A')
-        priority = record.get('sales_priority', 'N/A')
-        
-        print(f"Domain: {domain}")
-        print(f"Company: {company}")
-        print(f"Business Type: {business_type}")
-        print(f"Score: {score} (Grade: {grade})")
-        print(f"Sales Priority: {priority}")
-        print("-" * 40)
-    
-    # Save summary report
-    summary_data = {
-        'total_enriched': len(enriched_records),
-        'grade_distribution': grades.to_dict(),
-        'business_type_distribution': business_types.to_dict(),
-        'avg_lead_score': df_enriched['lead_quality_score'].mean(),
-        'high_priority_leads': len(df_enriched[df_enriched['sales_priority'] == 'High'])
-    }
-    
-    summary_file = "enrichment_summary.json"
-    with open(summary_file, 'w', encoding='utf-8') as f:
-        json.dump(summary_data, f, indent=2, default=str)
-    
-    print(f"📈 Summary report saved to: {summary_file}")
+    # Print the final summary
+    print_enrichment_summary(df_enriched)
 
 if __name__ == "__main__":
     main()
