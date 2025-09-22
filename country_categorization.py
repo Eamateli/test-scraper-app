@@ -1,109 +1,127 @@
 #!/usr/bin/env python3
 """
-Country Categorization Script (Bonus Task 4)
-Groups/categorizes scraped records by country derived from address/location fields
+Country Categorization Script - Fixed Version
+Groups/categorizes records by country using customer_leads.csv
 """
 
-import json
 import pandas as pd
 import re
 
-def load_scraped_data(filename="scraped_data.json"):
-    """Load scraped data from JSON file"""
+def load_customer_leads(filename="customer_leads.csv"):
+    """Load customer leads data from CSV file"""
     try:
-        with open(filename, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        print(f"Loaded {len(data)} records from {filename}")
-        return data
+        df = pd.read_csv(filename, encoding='utf-8')
+        print(f"Loaded {len(df)} records from {filename}")
+        return df
     except FileNotFoundError:
-        print(f"Error: {filename} not found. Run scraper.py first.")
-        return []
+        print(f"Error: {filename} not found. Run json_to_csv.py first.")
+        return None
+    except Exception as e:
+        print(f"Error reading CSV file: {e}")
+        return None
 
-def categorize_by_country(data):
-    """Enhanced country categorization based on address, domain, and content analysis"""
+def enhanced_country_categorization(df):
+    """Enhanced country categorization with better logic"""
     
-    # Comprehensive country mapping with keywords
+    # Comprehensive country mapping
     country_mapping = {
-        'USA': {
-            'keywords': ['usa', 'united states', 'america', 'us ', ' us', 'california', 'florida', 
+        'United States': {
+            'keywords': ['usa', 'united states', 'america', 'us', 'california', 'florida', 
                         'texas', 'new york', 'nevada', 'hawaii', 'colorado', 'utah', 'arizona',
-                        'washington', 'oregon', 'michigan', 'illinois', 'georgia', 'virginia'],
+                        'washington', 'oregon', 'michigan', 'illinois', 'georgia', 'virginia',
+                        'north carolina', 'south carolina', 'massachusetts', 'pennsylvania'],
             'domains': ['.us'],
             'codes': ['usa', 'us']
         },
-        'UK': {
+        'United Kingdom': {
             'keywords': ['uk', 'united kingdom', 'england', 'scotland', 'wales', 'london', 
-                        'manchester', 'birmingham', 'liverpool', 'edinburgh', 'cardiff', 'bristol'],
+                        'manchester', 'birmingham', 'liverpool', 'edinburgh', 'cardiff', 'bristol',
+                        'glasgow', 'belfast', 'oxford', 'cambridge'],
             'domains': ['.uk', '.co.uk'],
             'codes': ['uk', 'gb']
         },
-        'CANADA': {
+        'Canada': {
             'keywords': ['canada', 'canadian', 'toronto', 'vancouver', 'montreal', 'quebec', 
-                        'calgary', 'ottawa', 'edmonton', 'winnipeg', 'halifax'],
+                        'calgary', 'ottawa', 'edmonton', 'winnipeg', 'halifax', 'ontario',
+                        'british columbia', 'alberta', 'manitoba', 'saskatchewan'],
             'domains': ['.ca'],
             'codes': ['canada', 'ca']
         },
-        'SPAIN': {
+        'Spain': {
             'keywords': ['spain', 'españa', 'spanish', 'madrid', 'barcelona', 'valencia', 
-                        'seville', 'bilbao', 'malaga', 'granada', 'ibiza', 'mallorca'],
+                        'seville', 'bilbao', 'malaga', 'granada', 'ibiza', 'mallorca',
+                        'canary islands', 'andalusia', 'catalonia', 'basque'],
             'domains': ['.es'],
             'codes': ['spain', 'es']
         },
-        'FRANCE': {
+        'France': {
             'keywords': ['france', 'french', 'français', 'paris', 'lyon', 'marseille', 
-                        'nice', 'toulouse', 'bordeaux', 'lille', 'cannes', 'normandy'],
+                        'nice', 'toulouse', 'bordeaux', 'lille', 'cannes', 'normandy',
+                        'provence', 'brittany', 'loire', 'riviera'],
             'domains': ['.fr'],
             'codes': ['france', 'fr']
         },
-        'ITALY': {
+        'Italy': {
             'keywords': ['italy', 'italia', 'italian', 'rome', 'milan', 'florence', 'venice', 
-                        'naples', 'turin', 'bologna', 'tuscany', 'sicily', 'sardinia'],
+                        'naples', 'turin', 'bologna', 'tuscany', 'sicily', 'sardinia',
+                        'amalfi', 'cinque terre', 'lombardy', 'piedmont'],
             'domains': ['.it'],
             'codes': ['italy', 'it']
         },
-        'GERMANY': {
+        'Germany': {
             'keywords': ['germany', 'deutschland', 'german', 'berlin', 'munich', 'hamburg', 
-                        'cologne', 'frankfurt', 'stuttgart', 'dusseldorf', 'bavaria'],
+                        'cologne', 'frankfurt', 'stuttgart', 'dusseldorf', 'bavaria',
+                        'rhineland', 'westphalia', 'saxony', 'hesse'],
             'domains': ['.de'],
             'codes': ['germany', 'de']
         },
-        'AUSTRALIA': {
+        'Australia': {
             'keywords': ['australia', 'australian', 'sydney', 'melbourne', 'brisbane', 'perth', 
-                        'adelaide', 'canberra', 'darwin', 'gold coast', 'queensland'],
+                        'adelaide', 'canberra', 'darwin', 'gold coast', 'queensland',
+                        'new south wales', 'victoria', 'tasmania', 'western australia'],
             'domains': ['.au', '.com.au'],
             'codes': ['australia', 'au']
         },
-        'MEXICO': {
-            'keywords': ['mexico', 'méxico', 'mexican', 'cancun', 'playa del carmen', 'tulum', 
-                        'guadalajara', 'monterrey', 'tijuana', 'acapulco', 'puerto vallarta'],
-            'domains': ['.mx'],
-            'codes': ['mexico', 'mx']
-        },
-        'NETHERLANDS': {
-            'keywords': ['netherlands', 'holland', 'dutch', 'amsterdam', 'rotterdam', 'utrecht', 
-                        'eindhoven', 'tilburg', 'groningen', 'the hague'],
-            'domains': ['.nl'],
-            'codes': ['netherlands', 'nl']
-        },
-        'PORTUGAL': {
+        'Portugal': {
             'keywords': ['portugal', 'portuguese', 'lisbon', 'porto', 'faro', 'braga', 
-                        'coimbra', 'algarve', 'madeira', 'azores'],
+                        'coimbra', 'algarve', 'madeira', 'azores', 'sintra', 'cascais'],
             'domains': ['.pt'],
             'codes': ['portugal', 'pt']
         },
-        'GREECE': {
+        'Greece': {
             'keywords': ['greece', 'greek', 'athens', 'thessaloniki', 'santorini', 'mykonos', 
-                        'crete', 'rhodes', 'corfu', 'zakynthos'],
+                        'crete', 'rhodes', 'corfu', 'zakynthos', 'paros', 'naxos'],
             'domains': ['.gr'],
             'codes': ['greece', 'gr']
+        },
+        'Netherlands': {
+            'keywords': ['netherlands', 'holland', 'dutch', 'amsterdam', 'rotterdam', 'utrecht', 
+                        'eindhoven', 'tilburg', 'groningen', 'the hague', 'maastricht'],
+            'domains': ['.nl'],
+            'codes': ['netherlands', 'nl']
+        },
+        'Mexico': {
+            'keywords': ['mexico', 'méxico', 'mexican', 'cancun', 'playa del carmen', 'tulum', 
+                        'guadalajara', 'monterrey', 'tijuana', 'acapulco', 'puerto vallarta',
+                        'yucatan', 'quintana roo'],
+            'domains': ['.mx'],
+            'codes': ['mexico', 'mx']
         }
     }
     
-    categorized = {}
+    # Create a copy of the dataframe to avoid modifying original
+    df_categorized = df.copy()
+    
+    # Initialize categorization columns
+    df_categorized['Categorized_Country'] = 'OTHER'
+    df_categorized['Categorization_Method'] = 'none'
+    df_categorized['Categorization_Confidence'] = 'low'
+    
     categorization_stats = {
-        'total_processed': 0,
+        'total_processed': len(df_categorized),
         'successfully_categorized': 0,
-        'categorization_methods': {
+        'methods': {
+            'existing_country': 0,
             'address_keywords': 0,
             'domain_analysis': 0,
             'title_content': 0,
@@ -111,137 +129,162 @@ def categorize_by_country(data):
         }
     }
     
-    for record in data:
-        if 'error' in record or record.get('status') == 'failed':
-            continue
-        
-        categorization_stats['total_processed'] += 1
+    for index, row in df_categorized.iterrows():
         country = None
-        method_used = None
+        method = None
+        confidence = 'low'
         
-        # Prepare search texts
-        address = str(record.get('address', '')).lower()
-        domain = str(record.get('domain', '')).lower()
-        title = str(record.get('title', '')).lower()
-        description = str(record.get('description', '')).lower()
-        
-        # Combined search text for comprehensive analysis
-        search_text = f"{address} {domain} {title} {description}"
-        
-        # Method 1: Address keyword matching (highest priority)
-        for country_name, country_data in country_mapping.items():
-            if any(keyword in search_text for keyword in country_data['keywords']):
-                country = country_name
-                method_used = 'address_keywords'
-                break
-        
-        # Method 2: Domain analysis (if no match from keywords)
-        if not country:
-            for country_name, country_data in country_mapping.items():
-                if any(domain_ext in domain for domain_ext in country_data['domains']):
+        # Method 1: Use existing country field if available and not 'OTHER'
+        if pd.notna(row.get('Country')) and row.get('Country', '').upper() not in ['OTHER', 'UNKNOWN', '']:
+            existing_country = str(row['Country']).strip()
+            # Validate existing country against our mapping
+            for country_name in country_mapping.keys():
+                if existing_country.lower() in country_name.lower() or country_name.lower() in existing_country.lower():
                     country = country_name
-                    method_used = 'domain_analysis'
+                    method = 'existing_country'
+                    confidence = 'high'
                     break
+            
+            if not country and existing_country.upper() != 'OTHER':
+                # Keep the existing country even if not in our mapping
+                country = existing_country
+                method = 'existing_country'
+                confidence = 'medium'
         
-        # Method 3: Country codes in content
+        # Method 2: Address keyword matching (if no valid country found)
         if not country:
-            for country_name, country_data in country_mapping.items():
-                if any(code in search_text for code in country_data['codes']):
-                    country = country_name
-                    method_used = 'title_content'
-                    break
+            address = str(row.get('Address', '')).lower()
+            if address and address != 'nan':
+                for country_name, country_data in country_mapping.items():
+                    if any(keyword in address for keyword in country_data['keywords']):
+                        country = country_name
+                        method = 'address_keywords'
+                        confidence = 'high'
+                        break
+        
+        # Method 3: Domain analysis
+        if not country:
+            domain = str(row.get('Domain', '')).lower()
+            if domain and domain != 'nan':
+                for country_name, country_data in country_mapping.items():
+                    if any(domain_ext in domain for domain_ext in country_data['domains']):
+                        country = country_name
+                        method = 'domain_analysis'
+                        confidence = 'medium'
+                        break
+        
+        # Method 4: Title and content analysis
+        if not country:
+            title = str(row.get('Title', '')).lower()
+            if title and title != 'nan':
+                for country_name, country_data in country_mapping.items():
+                    if any(keyword in title for keyword in country_data['keywords']):
+                        country = country_name
+                        method = 'title_content'
+                        confidence = 'medium'
+                        break
         
         # Default to OTHER if no match found
         if not country:
             country = 'OTHER'
-            method_used = 'fallback_other'
+            method = 'fallback_other'
+            confidence = 'low'
         
-        # Track categorization method
-        categorization_stats['categorization_methods'][method_used] += 1
+        # Update the record
+        df_categorized.at[index, 'Categorized_Country'] = country
+        df_categorized.at[index, 'Categorization_Method'] = method
+        df_categorized.at[index, 'Categorization_Confidence'] = confidence
+        
+        # Update statistics
+        categorization_stats['methods'][method] += 1
         if country != 'OTHER':
             categorization_stats['successfully_categorized'] += 1
-        
-        # Add categorization info to record
-        enhanced_record = record.copy()
-        enhanced_record['country'] = country
-        enhanced_record['categorization_method'] = method_used
-        enhanced_record['categorization_confidence'] = 'high' if method_used == 'address_keywords' else 'medium' if method_used in ['domain_analysis', 'title_content'] else 'low'
-        
-        # Add to categorized data
-        if country not in categorized:
-            categorized[country] = []
-        categorized[country].append(enhanced_record)
     
-    return categorized, categorization_stats
+    return df_categorized, categorization_stats
 
-def create_country_summary(categorized_data):
+def create_country_summary(df_categorized):
     """Create summary statistics for each country"""
     summary_data = []
     
-    for country, records in categorized_data.items():
-        # Calculate statistics for this country
-        total_records = len(records)
-        total_properties = sum(r.get('property_count', 0) for r in records)
-        records_with_email = len([r for r in records if r.get('email')])
-        records_with_phone = len([r for r in records if r.get('phone')])
-        records_with_address = len([r for r in records if r.get('address')])
+    # Group by categorized country
+    grouped = df_categorized.groupby('Categorized_Country')
+    
+    for country, group in grouped:
+        total_records = len(group)
+        total_properties = group['Property Count'].sum()
+        records_with_email = len(group[group['Email'] != ''])
+        records_with_phone = len(group[group['Phone'] != ''])
+        records_with_address = len(group[group['Address'] != ''])
         
         # Average properties per domain
         avg_properties = total_properties / total_records if total_records > 0 else 0
         
-        # Contact completeness rate
-        contact_completeness = (records_with_email + records_with_phone) / (total_records * 2) * 100 if total_records > 0 else 0
+        # Contact completeness rates
+        email_rate = records_with_email / total_records * 100 if total_records > 0 else 0
+        phone_rate = records_with_phone / total_records * 100 if total_records > 0 else 0
         
         summary_data.append({
             'Country': country,
             'Total_Records': total_records,
             'Total_Properties': total_properties,
-            'Avg_Properties_per_Domain': round(avg_properties, 1),
+            'Avg_Properties_per_Record': round(avg_properties, 1),
             'Records_with_Email': records_with_email,
             'Records_with_Phone': records_with_phone,
             'Records_with_Address': records_with_address,
-            'Email_Coverage_Percent': round(records_with_email / total_records * 100, 1) if total_records > 0 else 0,
-            'Phone_Coverage_Percent': round(records_with_phone / total_records * 100, 1) if total_records > 0 else 0,
-            'Contact_Completeness_Percent': round(contact_completeness, 1)
+            'Email_Rate_Percent': round(email_rate, 1),
+            'Phone_Rate_Percent': round(phone_rate, 1)
         })
     
     # Sort by total records descending
-    summary_data.sort(key=lambda x: x['Total_Records'], reverse=True)
-    return summary_data
+    summary_df = pd.DataFrame(summary_data)
+    summary_df = summary_df.sort_values('Total_Records', ascending=False)
+    
+    return summary_df
 
 def main():
     """Main function to categorize records by country"""
-    print("Starting country categorization...")
-
-    # Load scraped data
-    data = load_scraped_data()
-    if not data:
+    print("Starting enhanced country categorization...")
+    
+    # Load customer leads data
+    df = load_customer_leads()
+    if df is None:
         return
-
-    # Categorize by country
-    categorized_data, stats = categorize_by_country(data)
-
-    # Combine into one flat list of categorized records
-    all_records = []
-    for country, records in categorized_data.items():
-        all_records.extend(records)
-
-    # Save single CSV with country column (requirement: ONE CSV file)
-    df_categorized = pd.json_normalize(all_records)
+    
+    # Perform enhanced categorization
+    df_categorized, stats = enhanced_country_categorization(df)
+    
+    # Save categorized records
     output_file = "country_categorized_records.csv"
     df_categorized.to_csv(output_file, index=False, encoding='utf-8')
     print(f"✅ Country categorized records saved to {output_file}")
-
-    # Print summary stats (optional, for console only)
-    print("\nSummary:")
+    
+    # Create and save summary
+    summary_df = create_country_summary(df_categorized)
+    summary_file = "country_summary.csv"
+    summary_df.to_csv(summary_file, index=False, encoding='utf-8')
+    print(f"✅ Country summary saved to {summary_file}")
+    
+    # Print statistics
+    print(f"\nCategorization Summary:")
     print("=" * 50)
     print(f"Total records processed: {stats['total_processed']}")
     print(f"Successfully categorized: {stats['successfully_categorized']}")
+    
     if stats['total_processed'] > 0:
-        rate = stats['successfully_categorized'] / stats['total_processed'] * 100
-        print(f"Categorization rate: {rate:.1f}%")
+        success_rate = stats['successfully_categorized'] / stats['total_processed'] * 100
+        print(f"Categorization success rate: {success_rate:.1f}%")
+    
+    print(f"\nCategorization methods used:")
+    for method, count in stats['methods'].items():
+        if count > 0:
+            print(f"  {method}: {count}")
+    
+    print(f"\nCountry distribution (top 10):")
+    top_countries = summary_df.head(10)
+    for _, row in top_countries.iterrows():
+        print(f"  {row['Country']}: {row['Total_Records']} records")
+    
     print("Done!")
-
 
 if __name__ == "__main__":
     main()
