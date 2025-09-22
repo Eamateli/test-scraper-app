@@ -16,7 +16,7 @@ The command to create a virtual environment may differ depending on your operati
 ```bash
 . venv/bin/activate
 ```
-This command may also vary. Other common variations include:
+Other common variations include:
 ```bash
 source venv/bin/activate
 ```
