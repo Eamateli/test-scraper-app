@@ -4,7 +4,39 @@ A web scraping application built with Streamlit for discovering and analyzing  s
 
 ##  Quick Start
 
-### Option 1: Streamlit Web App (Recommended)
+### Prep Work
+
+- Open your favorite IDE or code editor (**PyCharm**, **VS Code**, **Cursor**, etc.).
+- Make sure you are in the correct directory where you want to run tests.
+- Create and activate a virtual environment:
+```bash
+python -m venv venv
+```
+The command to create a virtual environment may differ depending on your operating system (Windows, Linux, macOS).
+```bash
+. venv/bin/activate
+```
+This command may also vary. Other common variations include:
+```bash
+source venv/bin/activate
+```
+```bash
+. venv/Scripts/activate  or source venv/Scripts/activate
+```
+```bash
+deactivate
+```
+When you want to deactivate the virtual environment, run:
+
+-- Clone git repo
+```bash
+git clone https://github.com/Eamateli/test-scraper-app.git
+
+```
+
+
+
+### Step 1: Streamlit Web App 
 
 1. **Install Dependencies**
 ```bash
@@ -16,14 +48,15 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-3. **Access at**: `http://localhost:8501`
+3. **Access at**: `http://localhost:8501` Ctrl + left click to open
 
-### Option 2: Individual Scripts (PDF Requirements)
+### Step 2: Individual Scripts 
 
 1. **Install Dependencies**
 ```bash
 pip install -r requirements.txt
 ```
+If not already done.
 
 2. **Run Scripts in Sequence**
 ```bash
@@ -37,10 +70,10 @@ python scraper.py
 python json_to_csv.py
 
 # Step 4: Country categorization
-python bonus_4.py
+python country_categorization.py
 
 # Step 5: Enrich top records
-python bonus_5.py
+python company_personal_info_enrichment.py
 ```
 
 
@@ -188,19 +221,7 @@ lodgify-scraper/
 - `lodgify_country_*.csv` - Country categorization results
 - `lodgify_enriched_records.csv` - Enhanced company information
 
-##  Configuration
 
-### Environment Variables (Optional)
-```bash
-export MAX_WORKERS=5
-export DEFAULT_TIMEOUT=15
-export SCRAPING_DELAY=1
-```
-
-### Scraping Settings
-- **Max Subdomains**: 10-500 (discovery limit)
-- **Max to Scrape**: 10-100 (processing limit)
-- **Concurrent Workers**: 1-10 (performance vs. stability)
 
 ## 🔧 Troubleshooting
 
@@ -211,23 +232,8 @@ export SCRAPING_DELAY=1
 pip install -r requirements.txt --upgrade
 ```
 
-**Slow scraping performance**
-- Reduce concurrent workers to 2-3
-- Decrease max subdomains for testing
-- Check internet connection stability
 
-**Empty or poor results**
-- Verify target domain accessibility
-- Check for anti-bot protection
-- Try reducing concurrent workers
-- Increase timeout settings
-
-### Performance Optimization
-- **Testing**: Use 20-50 subdomains, 2-3 workers
-- **Production**: Use 100+ subdomains, 3-5 workers
-- **Large Scale**: Use 2-3 workers with delays
-
-##  Evaluation Criteria Coverage
+##  Criteria Coverage
 
 - **Subdomain Coverage**: Multi-method discovery with 200+ potential targets
 -  **Scraping Quality**: Comprehensive data extraction with error handling
