@@ -39,7 +39,7 @@ def filter_subdomains(subdomains):
         except Exception as e:
             logger.warning(f"Error filtering {url}: {e}")
     return filtered
- 
+
 class LodgifyScraper:
     def __init__(self):
         self.user_agents = [
