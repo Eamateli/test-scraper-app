@@ -98,16 +98,17 @@ This project provides **two complete solutions**:
 ## 📁 Project Structure
 
 ```
-lodgify-scraper/
+/test-scraper-app/
 ├── app.py                              # Main Streamlit application
 ├── subdomain_fetch.py                  # Task 1: Subdomain discovery
 ├── scraper.py                          # Task 2: Data scraping
 ├── json_to_csv.py                      # Task 3: JSON to CSV conversion
-├── coutnry_categorizations.py          # Bonus 4: Country categorization
-├── company_personal_info_enrichment.py  # Bonus 5: Company enrichment
+├── country_categorization.py           # Bonus 4: Country categorization
+├── company_personal_info_enrichment.py # Bonus 5: Company enrichment
 ├── requirements.txt                    # Python dependencies
-├── README.md                            # This file
-└── .gitignore                           # Git ignore patterns
+├── proxies.txt                         # Proxy configuration (optional)
+├── README.md                           # This file
+└── .gitignore                          # Git ignore patterns
 ```
 
 ##  Features
