@@ -1,6 +1,6 @@
 # Property Lead Scraper 
 
-A web scraping application built with Streamlit for discovering and analyzing  subdomains (Lodgify default) to generate high-quality leads for property management and vacation rental businesses.
+A web scraping application for finding and analyzing  subdomains (Lodgify default), to generate leads for property management and vacation rental businesses.
 
 ##  Quick Start
 
@@ -168,15 +168,15 @@ lodgify-scraper/
 
 **json_to_csv.py**
 - Converts JSON to marketing CSV
-- Outputs: `lodgify_leads_marketing.csv`
+- Outputs: `customer_leads.csv`
 
 **bonus_4.py**
 - Categorizes records by country
-- Outputs: `lodgify_country_categorized_detailed.csv`, `lodgify_country_summary.csv`
+- Outputs: `country_categorized_records.csv`, `country_summary.csv`
 
 **bonus_5.py**
 - Enriches top 5 records with company info
-- Outputs: `lodgify_enriched_records.csv`
+- Outputs: `enriched_company_records.csv`
 
 ##  Technical Implementation
 
